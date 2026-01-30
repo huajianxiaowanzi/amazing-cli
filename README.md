@@ -15,20 +15,45 @@ A beautiful, lightning-fast TUI launcher for your favorite AI agent command-line
 
 ## 🎬 Quick Start
 
-```bash
-# Install
-go install github.com/huajianxiaowanzi/amazing-cli@latest
+### Easy Installation (No Go Required!)
 
-# Run
-amazing
+> **Security Note**: The installation scripts download and verify checksums from GitHub releases. If you prefer to review the scripts before running them, you can download them first:
+> - [install.sh](https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.sh) for Linux/macOS
+> - [install.ps1](https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.ps1) for Windows
+
+**Linux & macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.sh | sh
 ```
 
-Or run directly from source:
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.ps1 | iex
+```
+
+**Manual Download:**
+
+Download pre-built binaries from the [Releases](https://github.com/huajianxiaowanzi/amazing-cli/releases) page:
+- Windows: `amazing-cli_Windows_x86_64.zip`
+- macOS (Intel): `amazing-cli_Darwin_x86_64.tar.gz`
+- macOS (Apple Silicon): `amazing-cli_Darwin_arm64.tar.gz`
+- Linux: `amazing-cli_Linux_x86_64.tar.gz`
+
+### For Go Developers
 
 ```bash
-git clone https://github.com/huajianxiaowanzi/amazing-cli.git
-cd amazing-cli
-go run main.go
+# Install from source
+go install github.com/huajianxiaowanzi/amazing-cli@latest
+
+# Or run directly
+go run github.com/huajianxiaowanzi/amazing-cli@latest
+```
+
+### After Installation
+
+```bash
+# Run the CLI
+amazing
 ```
 
 ## 🎮 Usage
@@ -94,6 +119,21 @@ type BalanceProvider interface {
 ## 📝 License
 
 MIT
+
+## 🚀 Creating a Release
+
+To publish pre-built binaries:
+
+1. Create and push a version tag:
+   ```bash
+   git tag -a v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+   ```
+
+2. GitHub Actions will automatically:
+   - Build binaries for all platforms
+   - Create a GitHub release
+   - Upload pre-built binaries
 
 ## 🤝 Contributing
 
