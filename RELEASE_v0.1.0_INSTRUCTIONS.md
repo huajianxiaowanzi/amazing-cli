@@ -25,7 +25,13 @@ Due to repository protection rules, the tag `v0.1.0` could not be pushed automat
 git checkout copilot/release-initial-version
 git pull
 
-# The tag should already exist locally. Push it:
+# The tag already exists locally. Just push it directly:
+git push origin v0.1.0
+```
+
+Or recreate the tag using the helper script:
+
+```bash
 ./push-release-tag.sh v0.1.0 "Initial release"
 ```
 
@@ -85,10 +91,19 @@ The release process typically takes 2-5 minutes to complete.
 
 If you encounter issues:
 
-1. **Permission Denied**: Ensure you have write access to the repository and permission to create tags
-2. **Tag Already Exists**: Delete the remote tag first with `git push origin :refs/tags/v0.1.0`
-3. **Workflow Doesn't Trigger**: Check that `.github/workflows/release.yml` exists and is properly configured
-4. **Build Failures**: Check the Actions logs for detailed error messages
+1. **Permission Denied**: Ensure you have write access to the repository and permission to create/push tags. Contact a repository administrator if needed.
+
+2. **Tag Already Exists Remotely**: If the tag exists on the remote with different content:
+   ```bash
+   # CAUTION: Only do this if you're sure about overwriting the tag
+   # This requires force push permissions
+   git push origin :refs/tags/v0.1.0  # Delete remote tag
+   git push origin v0.1.0              # Push new tag
+   ```
+
+3. **Workflow Doesn't Trigger**: Check that `.github/workflows/release.yml` exists and is properly configured to trigger on tag pushes.
+
+4. **Build Failures**: Check the Actions logs for detailed error messages. Common issues include Go version mismatches or missing dependencies.
 
 ### Repository Protection Rules
 

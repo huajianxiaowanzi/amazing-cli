@@ -10,6 +10,8 @@ import (
 )
 
 // version is set during build time using ldflags
+// Default is "dev" for development builds
+// In released binaries, this will be set to the actual version (e.g., "v0.1.0")
 var version = "dev"
 
 func main() {
