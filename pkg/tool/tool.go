@@ -100,6 +100,8 @@ func (r *Registry) Get(name string) *Tool {
 
 // Install attempts to install the tool on the current system.
 // Returns an error if installation is not available or fails.
+// Note: This method should not be called while a TUI is active, as it does not connect stdin
+// to avoid race conditions between the TUI and installation process.
 func (t *Tool) Install() error {
 	osType := runtime.GOOS
 
@@ -113,6 +115,7 @@ func (t *Tool) Install() error {
 	}
 
 	// Execute the installation command
+	// Note: stdin is not connected to avoid race conditions with TUI
 	var cmd *exec.Cmd
 	if osType == "windows" {
 		cmd = exec.Command("powershell", "-Command", installCmd)
@@ -122,7 +125,7 @@ func (t *Tool) Install() error {
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
+	// stdin is intentionally not connected to prevent race conditions with TUI
 
 	return cmd.Run()
 }

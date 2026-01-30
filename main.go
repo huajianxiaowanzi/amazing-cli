@@ -32,9 +32,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Safety check: verify tool is installed before execution
+	// The TUI handles installation prompts, but we verify here as a safety measure
+	if !tool.IsInstalled() {
+		fmt.Fprintf(os.Stderr, "\n❌ Tool not installed: %s\n", tool.Command)
+		fmt.Fprintf(os.Stderr, "Note: This should not happen if you used the TUI installation feature.\n")
+		fmt.Fprintf(os.Stderr, "Please restart the application and try installing again.\n\n")
+		os.Exit(1)
+	}
+
 	// Execute the tool (replaces current process)
 	// This allows the tool to take full control of the terminal
-	// Note: The TUI now handles installation prompts, so we only get here if tool is installed
 	err = tool.Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error executing tool: %v\n", err)

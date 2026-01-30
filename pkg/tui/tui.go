@@ -122,8 +122,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.success {
 			m.installSuccess = true
 			m.installError = ""
-			// Refresh the tool's installation status
-			// Wait a bit and then allow user to select the tool
+			// Refresh the tool's installation status by checking again
+			// This updates the checkmark in the UI
 		} else {
 			m.installError = fmt.Sprintf("%v", msg.err)
 		}

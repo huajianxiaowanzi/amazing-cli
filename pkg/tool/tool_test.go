@@ -71,13 +71,13 @@ func TestTool_Install_NoCommand(t *testing.T) {
 
 func TestRegistry_Get(t *testing.T) {
 	registry := NewRegistry()
-	
+
 	tool1 := &Tool{Name: "tool1", Command: "cmd1"}
 	tool2 := &Tool{Name: "tool2", Command: "cmd2"}
-	
+
 	registry.Register(tool1)
 	registry.Register(tool2)
-	
+
 	// Test getting existing tool
 	got := registry.Get("tool1")
 	if got == nil {
@@ -86,7 +86,7 @@ func TestRegistry_Get(t *testing.T) {
 	if got != nil && got.Name != "tool1" {
 		t.Errorf("Get() returned wrong tool, got %v", got.Name)
 	}
-	
+
 	// Test getting non-existent tool
 	got = registry.Get("nonexistent")
 	if got != nil {
@@ -96,17 +96,17 @@ func TestRegistry_Get(t *testing.T) {
 
 func TestRegistry_List(t *testing.T) {
 	registry := NewRegistry()
-	
+
 	if len(registry.List()) != 0 {
 		t.Error("New registry should have no tools")
 	}
-	
+
 	tool1 := &Tool{Name: "tool1"}
 	tool2 := &Tool{Name: "tool2"}
-	
+
 	registry.Register(tool1)
 	registry.Register(tool2)
-	
+
 	tools := registry.List()
 	if len(tools) != 2 {
 		t.Errorf("Registry should have 2 tools, got %d", len(tools))
