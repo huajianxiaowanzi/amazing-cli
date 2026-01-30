@@ -51,8 +51,8 @@ To create the first release (v0.1.0):
 
 ```bash
 # From the main branch
-git tag -a v0.1.0 -m "Initial release"
-git push origin v0.1.0
+git tag -a v0.1.2 -m "release"
+git push origin v0.1.1
 ```
 
 This will make the installation scripts work, as they require at least one release to be available.

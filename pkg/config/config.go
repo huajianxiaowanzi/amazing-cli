@@ -37,58 +37,59 @@ func LoadDefaultTools() *tool.Registry {
 	// Note: Installation commands should be verified and updated based on actual installation methods
 	registry.Register(&tool.Tool{
 		Name:        "claude",
-		DisplayName: "Claude Code",
+		DisplayName: "claude code",
 		Command:     "claude",
 		Description: "Claude Code by Anthropic",
 		Args:        []string{},
 		InstallCmds: map[string]string{
-			// Note: These commands may need to be updated based on actual Claude CLI availability
-			"darwin":  "", // Auto-install not available
-			"linux":   "", // Auto-install not available
-			"windows": "", // Auto-install not available
+			"darwin":  "curl -fsSL https://claude.ai/install.sh | bash",
+			"linux":   "curl -fsSL https://claude.ai/install.sh | bash",
+			"windows_ps":  "irm https://claude.ai/install.ps1 | iex",
+			"windows_cmd": "curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd",
 		},
-		InstallURL: "https://docs.anthropic.com/claude/docs",
+		InstallURL: "https://docs.anthropic.com/en/docs/claude-code/getting-started",
 	})
 
 	registry.Register(&tool.Tool{
 		Name:        "copilot",
-		DisplayName: "Copilot CLI",
-		Command:     "github-copilot-cli",
+		DisplayName: "copilot",
+		Command:     "copilot",
 		Description: "GitHub's AI-powered CLI assistant",
 		Args:        []string{},
 		InstallCmds: map[string]string{
-			"darwin":  "gh extension install github/gh-copilot",
-			"linux":   "gh extension install github/gh-copilot",
-			"windows": "gh extension install github/gh-copilot",
+			"darwin": "(curl -fsSL https://gh.io/copilot-install | bash) || (wget -qO- https://gh.io/copilot-install | bash) || brew install copilot-cli || npm install -g @github/copilot || npm install -g @github/copilot@prerelease",
+			"linux":  "(curl -fsSL https://gh.io/copilot-install | bash) || (wget -qO- https://gh.io/copilot-install | bash) || brew install copilot-cli || npm install -g @github/copilot || npm install -g @github/copilot@prerelease",
+			"windows_ps": "winget install GitHub.Copilot; if ($LASTEXITCODE -ne 0) { npm install -g @github/copilot }; if ($LASTEXITCODE -ne 0) { npm install -g @github/copilot@prerelease }",
+			"windows_cmd": "winget install GitHub.Copilot || npm install -g @github/copilot || npm install -g @github/copilot@prerelease",
 		},
 		InstallURL: "https://github.com/github/copilot-cli",
 	})
 
 	registry.Register(&tool.Tool{
-		Name:        "aider",
-		DisplayName: "Aider",
-		Command:     "aider",
-		Description: "AI pair programming in your terminal",
+		Name:        "kimi",
+		DisplayName: "kimi",
+		Command:     "kimi",
+		Description: "Kimi Code by Moonshot",
 		Args:        []string{},
 		InstallCmds: map[string]string{
-			"darwin":  "pip install aider-chat",
-			"linux":   "pip install aider-chat",
-			"windows": "pip install aider-chat",
+			"darwin":     "curl -L code.kimi.com/install.sh | bash",
+			"linux":      "curl -L code.kimi.com/install.sh | bash",
+			"windows_ps": "irm https://code.kimi.com/install.ps1 | iex",
 		},
 		InstallURL: "https://aider.chat",
 	})
 
 	registry.Register(&tool.Tool{
 		Name:        "codex",
-		DisplayName: "Codex",
+		DisplayName: "codex",
 		Command:     "codex",
 		Description: "OpenAI's Codex CLI",
 		Args:        []string{},
 		InstallCmds: map[string]string{
-			// Note: These commands may need to be updated based on actual Codex CLI availability
-			"darwin":  "", // Auto-install not available
-			"linux":   "", // Auto-install not available
-			"windows": "", // Auto-install not available
+			"darwin":     "brew install codex || npm i -g @openai/codex",
+			"linux":      "npm i -g @openai/codex",
+			"windows_ps": "npm i -g @openai/codex",
+			"windows_cmd": "npm i -g @openai/codex",
 		},
 		InstallURL: "https://platform.openai.com/docs/guides/code",
 	})
