@@ -15,20 +15,41 @@ A beautiful, lightning-fast TUI launcher for your favorite AI agent command-line
 
 ## 🎬 Quick Start
 
-```bash
-# Install
-go install github.com/huajianxiaowanzi/amazing-cli@latest
+### Easy Installation (No Go Required!)
 
-# Run
-amazing
+**Linux & macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.sh | sh
 ```
 
-Or run directly from source:
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.ps1 | iex
+```
+
+**Manual Download:**
+
+Download pre-built binaries from the [Releases](https://github.com/huajianxiaowanzi/amazing-cli/releases) page:
+- Windows: `amazing-cli_Windows_x86_64.zip`
+- macOS (Intel): `amazing-cli_Darwin_x86_64.tar.gz`
+- macOS (Apple Silicon): `amazing-cli_Darwin_arm64.tar.gz`
+- Linux: `amazing-cli_Linux_x86_64.tar.gz`
+
+### For Go Developers
 
 ```bash
-git clone https://github.com/huajianxiaowanzi/amazing-cli.git
-cd amazing-cli
-go run main.go
+# Install from source
+go install github.com/huajianxiaowanzi/amazing-cli@latest
+
+# Or run directly
+go run github.com/huajianxiaowanzi/amazing-cli@latest
+```
+
+### After Installation
+
+```bash
+# Run the CLI
+amazing
 ```
 
 ## 🎮 Usage
