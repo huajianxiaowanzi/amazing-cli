@@ -151,7 +151,7 @@ func (m Model) GetSelected() string {
 // renderInlineBalanceBar creates a compact visual representation of the token balance.
 func renderInlineBalanceBar(balance config.Balance) string {
 	width := 15
-	
+
 	// Clamp percentage to 0-100 range
 	percentage := balance.Percentage
 	if percentage < 0 {
@@ -160,10 +160,10 @@ func renderInlineBalanceBar(balance config.Balance) string {
 	if percentage > 100 {
 		percentage = 100
 	}
-	
+
 	filled := (width * percentage) / 100
 	bar := strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
-	
+
 	style := lipgloss.NewStyle()
 	switch balance.Color {
 	case "green":
@@ -180,7 +180,7 @@ func renderInlineBalanceBar(balance config.Balance) string {
 	label := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#626262")).
 		Render(fmt.Sprintf("Token: %s", balance.Display))
-	
+
 	return fmt.Sprintf("%s %s", label, style.Render(bar))
 }
 
@@ -188,7 +188,7 @@ func renderInlineBalanceBar(balance config.Balance) string {
 func Run(registry *tool.Registry) (string, error) {
 	model := NewModel(registry)
 	p := tea.NewProgram(model)
-	
+
 	finalModel, err := p.Run()
 	if err != nil {
 		return "", fmt.Errorf("error running TUI: %w", err)

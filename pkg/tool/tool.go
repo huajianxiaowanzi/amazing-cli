@@ -3,16 +3,16 @@ package tool
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
-	"syscall"
 )
 
 // Tool represents an AI CLI tool that can be launched.
 type Tool struct {
-	Name        string // Internal identifier (e.g., "aider")
-	DisplayName string // Human-readable name (e.g., "Aider - AI Pair Programming")
-	Command     string // Command to execute (e.g., "aider")
-	Description string // Brief description of the tool
+	Name        string   // Internal identifier (e.g., "aider")
+	DisplayName string   // Human-readable name (e.g., "Aider - AI Pair Programming")
+	Command     string   // Command to execute (e.g., "aider")
+	Description string   // Brief description of the tool
 	Args        []string // Default arguments to pass
 }
 
@@ -22,20 +22,24 @@ func (t *Tool) IsInstalled() bool {
 	return err == nil
 }
 
-// Execute launches the tool using syscall.Exec to replace the current process.
-// This allows the tool to take over the terminal completely.
+// Execute launches the tool as a child process with full terminal control.
+// This method is cross-platform compatible (works on Windows, Linux, macOS).
 func (t *Tool) Execute() error {
 	path, err := exec.LookPath(t.Command)
 	if err != nil {
 		return fmt.Errorf("tool not found: %s", t.Command)
 	}
 
-	// Prepare arguments (command name should be first)
-	args := append([]string{t.Command}, t.Args...)
+	// Create command with arguments
+	cmd := exec.Command(path, t.Args...)
 
-	// Replace current process with the tool
-	// Pass the current environment to ensure the tool has access to PATH, HOME, etc.
-	return syscall.Exec(path, args, syscall.Environ())
+	// Pass through standard streams to allow full terminal interaction
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Run the command and wait for it to complete
+	return cmd.Run()
 }
 
 // Registry manages a collection of available tools.
