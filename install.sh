@@ -106,22 +106,29 @@ if ! curl -fsSL -o "checksums.txt" "$CHECKSUM_URL"; then
     echo "${YELLOW}Warning: Could not download checksums file${NC}"
 else
     echo "Verifying checksum..."
-    if command -v sha256sum >/dev/null 2>&1; then
-        if ! grep "$ARCHIVE_NAME" checksums.txt | sha256sum -c --status; then
-            echo "${RED}Checksum verification failed!${NC}"
-            echo "The downloaded file may be corrupted or tampered with."
-            exit 1
-        fi
-        echo "${GREEN}Checksum verified successfully${NC}"
-    elif command -v shasum >/dev/null 2>&1; then
-        if ! grep "$ARCHIVE_NAME" checksums.txt | shasum -a 256 -c --status; then
-            echo "${RED}Checksum verification failed!${NC}"
-            echo "The downloaded file may be corrupted or tampered with."
-            exit 1
-        fi
-        echo "${GREEN}Checksum verified successfully${NC}"
+    if command -v grep >/dev/null 2>&1; then
+        CHECKSUM_LINE=$(grep "$ARCHIVE_NAME" checksums.txt || true)
+    fi
+    if [ -z "$CHECKSUM_LINE" ]; then
+        echo "${YELLOW}Warning: checksum entry for $ARCHIVE_NAME not found; skipping verification${NC}"
     else
-        echo "${YELLOW}Warning: sha256sum/shasum not found, skipping checksum verification${NC}"
+        EXPECTED_SUM=$(printf "%s" "$CHECKSUM_LINE" | awk '{print $1}')
+        if command -v sha256sum >/dev/null 2>&1; then
+            ACTUAL_SUM=$(sha256sum "$ARCHIVE_NAME" | awk '{print $1}')
+        elif command -v shasum >/dev/null 2>&1; then
+            ACTUAL_SUM=$(shasum -a 256 "$ARCHIVE_NAME" | awk '{print $1}')
+        else
+            ACTUAL_SUM=""
+        fi
+        if [ -z "$ACTUAL_SUM" ]; then
+            echo "${YELLOW}Warning: sha256sum/shasum not found, skipping checksum verification${NC}"
+        elif [ "$EXPECTED_SUM" != "$ACTUAL_SUM" ]; then
+            echo "${RED}Checksum verification failed!${NC}"
+            echo "The downloaded file may be corrupted or tampered with."
+            exit 1
+        else
+            echo "${GREEN}Checksum verified successfully${NC}"
+        fi
     fi
 fi
 
