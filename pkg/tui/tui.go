@@ -160,8 +160,17 @@ func (m Model) GetSelected() string {
 // renderBalanceBar creates a visual representation of the token balance.
 func renderBalanceBar(balance config.Balance) string {
 	width := 40
-	filled := (width * balance.Percentage) / 100
 	
+	// Clamp percentage to 0-100 range
+	percentage := balance.Percentage
+	if percentage < 0 {
+		percentage = 0
+	}
+	if percentage > 100 {
+		percentage = 100
+	}
+	
+	filled := (width * percentage) / 100
 	bar := strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
 	
 	style := lipgloss.NewStyle()
@@ -172,6 +181,9 @@ func renderBalanceBar(balance config.Balance) string {
 		style = style.Foreground(lipgloss.Color("#FFB86C"))
 	case "red":
 		style = style.Foreground(lipgloss.Color("#FF6B6B"))
+	default:
+		// Default to green for unknown colors
+		style = style.Foreground(lipgloss.Color("#04B575"))
 	}
 
 	label := fmt.Sprintf("Token Balance: %s", balance.Display)
@@ -188,6 +200,9 @@ func Run(registry *tool.Registry) (string, error) {
 		return "", fmt.Errorf("error running TUI: %w", err)
 	}
 
-	m := finalModel.(Model)
+	m, ok := finalModel.(Model)
+	if !ok {
+		return "", fmt.Errorf("unexpected model type returned from TUI")
+	}
 	return m.GetSelected(), nil
 }

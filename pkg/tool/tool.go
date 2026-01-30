@@ -34,8 +34,8 @@ func (t *Tool) Execute() error {
 	args := append([]string{t.Command}, t.Args...)
 
 	// Replace current process with the tool
-	// This is the cleanest way to hand off control to another CLI
-	return syscall.Exec(path, args, nil)
+	// Pass the current environment to ensure the tool has access to PATH, HOME, etc.
+	return syscall.Exec(path, args, syscall.Environ())
 }
 
 // Registry manages a collection of available tools.
