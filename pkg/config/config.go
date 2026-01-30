@@ -33,18 +33,10 @@ type BalanceProvider interface {
 func LoadDefaultTools() *tool.Registry {
 	registry := tool.NewRegistry()
 
-	// Register popular AI CLI tools
-	registry.Register(&tool.Tool{
-		Name:        "aider",
-		DisplayName: "Aider - AI Pair Programming",
-		Command:     "aider",
-		Description: "AI pair programming in your terminal",
-		Args:        []string{},
-	})
-
+	// Register supported AI CLI tools
 	registry.Register(&tool.Tool{
 		Name:        "claude",
-		DisplayName: "Claude - Anthropic AI Assistant",
+		DisplayName: "Claude Code",
 		Command:     "claude",
 		Description: "Conversational AI by Anthropic",
 		Args:        []string{},
@@ -52,17 +44,17 @@ func LoadDefaultTools() *tool.Registry {
 
 	registry.Register(&tool.Tool{
 		Name:        "copilot",
-		DisplayName: "GitHub Copilot CLI",
+		DisplayName: "Copilot CLI",
 		Command:     "github-copilot-cli",
 		Description: "GitHub's AI-powered CLI assistant",
 		Args:        []string{},
 	})
 
 	registry.Register(&tool.Tool{
-		Name:        "openai",
-		DisplayName: "OpenAI CLI",
-		Command:     "openai",
-		Description: "OpenAI command-line interface",
+		Name:        "codex",
+		DisplayName: "Codex",
+		Command:     "codex",
+		Description: "OpenAI's code generation model",
 		Args:        []string{},
 	})
 
