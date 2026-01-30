@@ -9,6 +9,9 @@ import (
 	"github.com/huajianxiaowanzi/amazing-cli/pkg/tui"
 )
 
+// version is set during build time using ldflags
+var version = "dev"
+
 func main() {
 	// Load available AI tools
 	registry := config.LoadDefaultTools()
