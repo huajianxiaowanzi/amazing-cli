@@ -59,7 +59,19 @@ LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | 
 
 if [ -z "$LATEST_RELEASE" ]; then
     echo "${RED}Failed to get latest release information${NC}"
-    echo "Please check your internet connection and that the repository has releases"
+    echo ""
+    echo "${YELLOW}It appears this repository doesn't have any releases yet.${NC}"
+    echo ""
+    echo "${GREEN}Alternative installation methods:${NC}"
+    echo "1. Install from source (requires Go):"
+    echo "   ${YELLOW}go install github.com/$REPO@latest${NC}"
+    echo ""
+    echo "2. Build from source:"
+    echo "   ${YELLOW}git clone https://github.com/$REPO.git${NC}"
+    echo "   ${YELLOW}cd ${REPO##*/}${NC}"
+    echo "   ${YELLOW}go build -o $BINARY_NAME${NC}"
+    echo ""
+    echo "For more information, visit: ${GREEN}https://github.com/$REPO${NC}"
     exit 1
 fi
 
