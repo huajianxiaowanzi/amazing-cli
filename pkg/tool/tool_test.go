@@ -112,3 +112,50 @@ func TestRegistry_List(t *testing.T) {
 		t.Errorf("Registry should have 2 tools, got %d", len(tools))
 	}
 }
+
+func TestRegistry_List_SortsByInstallation(t *testing.T) {
+	registry := NewRegistry()
+
+	// Create mock tools - we'll use real commands that may or may not be installed
+	// Tool 1: likely not installed (fake command)
+	tool1 := &Tool{Name: "uninstalled1", Command: "nonexistent-cli-tool-xyz"}
+	// Tool 2: likely installed (common shell command)
+	tool2 := &Tool{Name: "installed1", Command: "sh"}
+	// Tool 3: likely not installed (fake command)
+	tool3 := &Tool{Name: "uninstalled2", Command: "another-nonexistent-cli-tool"}
+	// Tool 4: likely installed (common shell command)
+	tool4 := &Tool{Name: "installed2", Command: "echo"}
+
+	// Register in mixed order
+	registry.Register(tool1) // uninstalled
+	registry.Register(tool2) // installed
+	registry.Register(tool3) // uninstalled
+	registry.Register(tool4) // installed
+
+	tools := registry.List()
+
+	// Count installed and uninstalled
+	var installedCount, uninstalledCount int
+	var firstUninstalledIdx int = -1
+
+	for i, tool := range tools {
+		if tool.IsInstalled() {
+			installedCount++
+			// If we've already seen an uninstalled tool, this is wrong
+			if firstUninstalledIdx != -1 {
+				t.Errorf("Installed tool %s appears after uninstalled tool at index %d", tool.Name, firstUninstalledIdx)
+			}
+		} else {
+			if firstUninstalledIdx == -1 {
+				firstUninstalledIdx = i
+			}
+			uninstalledCount++
+		}
+	}
+
+	// Verify we have at least some installed tools (sh and echo should be available)
+	// This test is a bit brittle since it depends on the environment, but it's a reasonable check
+	if installedCount == 0 {
+		t.Log("Warning: No tools detected as installed in test environment")
+	}
+}

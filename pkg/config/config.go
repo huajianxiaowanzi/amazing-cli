@@ -78,5 +78,20 @@ func LoadDefaultTools() *tool.Registry {
 		InstallURL: "https://aider.chat",
 	})
 
+	registry.Register(&tool.Tool{
+		Name:        "codex",
+		DisplayName: "Codex",
+		Command:     "codex",
+		Description: "OpenAI's Codex CLI",
+		Args:        []string{},
+		InstallCmds: map[string]string{
+			// Note: These commands may need to be updated based on actual Codex CLI availability
+			"darwin":  "", // Auto-install not available
+			"linux":   "", // Auto-install not available
+			"windows": "", // Auto-install not available
+		},
+		InstallURL: "https://platform.openai.com/docs/guides/code",
+	})
+
 	return registry
 }
