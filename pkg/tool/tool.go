@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 )
 
 // Tool represents an AI CLI tool that can be launched.
@@ -22,6 +23,20 @@ func (t *Tool) IsInstalled() bool {
 	return err == nil
 }
 
+// clearScreen clears the terminal screen in a cross-platform way.
+func clearScreen() {
+	var cmd *exec.Cmd
+	
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/c", "cls")
+	} else {
+		cmd = exec.Command("clear")
+	}
+	
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
+
 // Execute launches the tool as a child process with full terminal control.
 // This method is cross-platform compatible (works on Windows, Linux, macOS).
 func (t *Tool) Execute() error {
@@ -29,6 +44,9 @@ func (t *Tool) Execute() error {
 	if err != nil {
 		return fmt.Errorf("tool not found: %s", t.Command)
 	}
+
+	// Clear the screen before launching the tool
+	clearScreen()
 
 	// Create command with arguments
 	cmd := exec.Command(path, t.Args...)
