@@ -34,7 +34,8 @@ func clearScreen() {
 	}
 
 	cmd.Stdout = os.Stdout
-	cmd.Run()
+	// Ignore errors as clearing the screen is optional and shouldn't prevent tool execution
+	_ = cmd.Run()
 }
 
 // Execute launches the tool as a child process with full terminal control.
