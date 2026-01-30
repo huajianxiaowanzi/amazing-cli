@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 )
 
 // Tool represents an AI CLI tool that can be launched.
@@ -22,6 +23,24 @@ func (t *Tool) IsInstalled() bool {
 	return err == nil
 }
 
+// clearScreen clears the terminal screen in a cross-platform way.
+func clearScreen() {
+	if runtime.GOOS == "windows" {
+		// On Windows, use the cls command
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		// Ignore errors as clearing the screen is optional and shouldn't prevent tool execution
+		_ = cmd.Run()
+	} else {
+		// On Unix-like systems, use ANSI escape sequences which are more reliable
+		// \033[H moves cursor to home position, \033[2J clears the entire screen
+		fmt.Print("\033[H\033[2J")
+		// Flush to ensure the escape sequences are written immediately
+		// Ignore errors as clearing the screen is optional and shouldn't prevent tool execution
+		_ = os.Stdout.Sync()
+	}
+}
+
 // Execute launches the tool as a child process with full terminal control.
 // This method is cross-platform compatible (works on Windows, Linux, macOS).
 func (t *Tool) Execute() error {
@@ -29,6 +48,9 @@ func (t *Tool) Execute() error {
 	if err != nil {
 		return fmt.Errorf("tool not found: %s", t.Command)
 	}
+
+	// Clear the screen before launching the tool
+	clearScreen()
 
 	// Create command with arguments
 	cmd := exec.Command(path, t.Args...)
