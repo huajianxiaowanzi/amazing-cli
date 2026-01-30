@@ -72,11 +72,11 @@ func LoadDefaultTools() *tool.Registry {
 		Description: "Kimi Code by Moonshot",
 		Args:        []string{},
 		InstallCmds: map[string]string{
-			"darwin":     "curl -L code.kimi.com/install.sh | bash",
-			"linux":      "curl -L code.kimi.com/install.sh | bash",
+			"darwin":     "curl -L https://code.kimi.com/install.sh | bash",
+			"linux":      "curl -L https://code.kimi.com/install.sh | bash",
 			"windows_ps": "irm https://code.kimi.com/install.ps1 | iex",
 		},
-		InstallURL: "https://aider.chat",
+		InstallURL: "https://code.kimi.com",
 	})
 
 	registry.Register(&tool.Tool{

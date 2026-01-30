@@ -96,7 +96,7 @@ Learn more: [GitHub Copilot CLI](https://github.com/github/copilot-cli)
 **Kimi Code:**
 ```bash
 # Linux & macOS
-curl -L code.kimi.com/install.sh | bash
+curl -L https://code.kimi.com/install.sh | bash
 
 # Windows (PowerShell)
 irm https://code.kimi.com/install.ps1 | iex
