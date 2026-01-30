@@ -17,6 +17,10 @@ A beautiful, lightning-fast TUI launcher for your favorite AI agent command-line
 
 ### Easy Installation (No Go Required!)
 
+> **Security Note**: The installation scripts download and verify checksums from GitHub releases. If you prefer to review the scripts before running them, you can download them first:
+> - [install.sh](https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.sh) for Linux/macOS
+> - [install.ps1](https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.ps1) for Windows
+
 **Linux & macOS:**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.sh | sh
@@ -115,6 +119,21 @@ type BalanceProvider interface {
 ## 📝 License
 
 MIT
+
+## 🚀 Creating a Release
+
+To publish pre-built binaries:
+
+1. Create and push a version tag:
+   ```bash
+   git tag -a v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+   ```
+
+2. GitHub Actions will automatically:
+   - Build binaries for all platforms
+   - Create a GitHub release
+   - Upload pre-built binaries
 
 ## 🤝 Contributing
 

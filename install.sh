@@ -59,6 +59,7 @@ LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | 
 
 if [ -z "$LATEST_RELEASE" ]; then
     echo "${RED}Failed to get latest release information${NC}"
+    echo "Please check your internet connection and that the repository has releases"
     exit 1
 fi
 
@@ -82,7 +83,34 @@ cd "$TMPDIR"
 
 if ! curl -fsSL -o "$ARCHIVE_NAME" "$DOWNLOAD_URL"; then
     echo "${RED}Failed to download binary${NC}"
+    echo "Please check your internet connection and that the release exists"
     exit 1
+fi
+
+# Download and verify checksum
+echo "Downloading checksums..."
+CHECKSUM_URL="https://github.com/$REPO/releases/download/$LATEST_RELEASE/checksums.txt"
+if ! curl -fsSL -o "checksums.txt" "$CHECKSUM_URL"; then
+    echo "${YELLOW}Warning: Could not download checksums file${NC}"
+else
+    echo "Verifying checksum..."
+    if command -v sha256sum >/dev/null 2>&1; then
+        if ! grep "$ARCHIVE_NAME" checksums.txt | sha256sum -c --status; then
+            echo "${RED}Checksum verification failed!${NC}"
+            echo "The downloaded file may be corrupted or tampered with."
+            exit 1
+        fi
+        echo "${GREEN}Checksum verified successfully${NC}"
+    elif command -v shasum >/dev/null 2>&1; then
+        if ! grep "$ARCHIVE_NAME" checksums.txt | shasum -a 256 -c --status; then
+            echo "${RED}Checksum verification failed!${NC}"
+            echo "The downloaded file may be corrupted or tampered with."
+            exit 1
+        fi
+        echo "${GREEN}Checksum verified successfully${NC}"
+    else
+        echo "${YELLOW}Warning: sha256sum/shasum not found, skipping checksum verification${NC}"
+    fi
 fi
 
 # Extract
@@ -117,7 +145,7 @@ else
 fi
 
 # Cleanup
-cd -
+cd - > /dev/null 2>&1
 rm -rf "$TMPDIR"
 
 echo "${GREEN}✅ Installation complete!${NC}"

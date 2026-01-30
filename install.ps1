@@ -21,6 +21,8 @@ try {
     Write-Host "Latest version: $version"
 } catch {
     Write-Host "Failed to get latest release information" -ForegroundColor Red
+    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Please check your internet connection and that the repository has releases" -ForegroundColor Yellow
     exit 1
 }
 
@@ -41,6 +43,29 @@ try {
     # Download
     $archivePath = Join-Path $tempDir $archiveName
     Invoke-WebRequest -Uri $downloadUrl -OutFile $archivePath
+
+    # Download and verify checksum
+    Write-Host "Downloading checksums..."
+    $checksumUrl = "https://github.com/$repo/releases/download/$version/checksums.txt"
+    $checksumPath = Join-Path $tempDir "checksums.txt"
+    try {
+        Invoke-WebRequest -Uri $checksumUrl -OutFile $checksumPath
+        
+        Write-Host "Verifying checksum..."
+        $checksumContent = Get-Content $checksumPath | Where-Object { $_ -match $archiveName }
+        if ($checksumContent) {
+            $expectedHash = ($checksumContent -split '\s+')[0]
+            $actualHash = (Get-FileHash $archivePath -Algorithm SHA256).Hash
+            if ($expectedHash.ToLower() -ne $actualHash.ToLower()) {
+                Write-Host "Checksum verification failed!" -ForegroundColor Red
+                Write-Host "The downloaded file may be corrupted or tampered with." -ForegroundColor Red
+                exit 1
+            }
+            Write-Host "Checksum verified successfully" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "Warning: Could not verify checksum" -ForegroundColor Yellow
+    }
 
     # Extract
     Write-Host "Extracting..."
@@ -67,11 +92,16 @@ try {
     # Check if install directory is in PATH
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if ($userPath -notlike "*$installDir*") {
-        Write-Host "⚠️  Warning: $installDir is not in your PATH" -ForegroundColor Yellow
-        Write-Host "Adding $installDir to your PATH..."
-        $newPath = "$userPath;$installDir"
-        [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
-        Write-Host "✅ Added to PATH. Please restart your terminal for changes to take effect." -ForegroundColor Green
+        Write-Host ""
+        Write-Host "The install directory is not in your PATH." -ForegroundColor Yellow
+        $response = Read-Host "Would you like to add $installDir to your PATH? (y/N)"
+        if ($response -eq 'y' -or $response -eq 'Y') {
+            $newPath = "$userPath;$installDir"
+            [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+            Write-Host "✅ Added to PATH. Please restart your terminal for changes to take effect." -ForegroundColor Green
+        } else {
+            Write-Host "⚠️  You'll need to add $installDir to your PATH manually" -ForegroundColor Yellow
+        }
     }
 } catch {
     Write-Host "Installation failed: $_" -ForegroundColor Red
