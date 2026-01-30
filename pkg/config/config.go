@@ -34,12 +34,20 @@ func LoadDefaultTools() *tool.Registry {
 	registry := tool.NewRegistry()
 
 	// Register supported AI CLI tools
+	// Note: Installation commands should be verified and updated based on actual installation methods
 	registry.Register(&tool.Tool{
 		Name:        "claude",
 		DisplayName: "Claude Code",
 		Command:     "claude",
 		Description: "Claude Code by Anthropic",
 		Args:        []string{},
+		InstallCmds: map[string]string{
+			// Note: These commands may need to be updated based on actual Claude CLI availability
+			"darwin":  "", // Auto-install not available
+			"linux":   "", // Auto-install not available
+			"windows": "", // Auto-install not available
+		},
+		InstallURL: "https://docs.anthropic.com/claude/docs",
 	})
 
 	registry.Register(&tool.Tool{
@@ -48,14 +56,26 @@ func LoadDefaultTools() *tool.Registry {
 		Command:     "github-copilot-cli",
 		Description: "GitHub's AI-powered CLI assistant",
 		Args:        []string{},
+		InstallCmds: map[string]string{
+			"darwin":  "gh extension install github/gh-copilot",
+			"linux":   "gh extension install github/gh-copilot",
+			"windows": "gh extension install github/gh-copilot",
+		},
+		InstallURL: "https://github.com/github/copilot-cli",
 	})
 
 	registry.Register(&tool.Tool{
-		Name:        "codex",
-		DisplayName: "Codex",
-		Command:     "codex",
-		Description: "OpenAI's code generation model",
+		Name:        "aider",
+		DisplayName: "Aider",
+		Command:     "aider",
+		Description: "AI pair programming in your terminal",
 		Args:        []string{},
+		InstallCmds: map[string]string{
+			"darwin":  "pip install aider-chat",
+			"linux":   "pip install aider-chat",
+			"windows": "pip install aider-chat",
+		},
+		InstallURL: "https://aider.chat",
 	})
 
 	return registry
