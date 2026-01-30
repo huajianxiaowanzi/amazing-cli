@@ -25,17 +25,17 @@ func (t *Tool) IsInstalled() bool {
 
 // clearScreen clears the terminal screen in a cross-platform way.
 func clearScreen() {
-	var cmd *exec.Cmd
-
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/c", "cls")
+		// On Windows, use the cls command
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		// Ignore errors as clearing the screen is optional and shouldn't prevent tool execution
+		_ = cmd.Run()
 	} else {
-		cmd = exec.Command("clear")
+		// On Unix-like systems, use ANSI escape sequences which are more reliable
+		// \033[H moves cursor to home position, \033[2J clears the entire screen
+		fmt.Print("\033[H\033[2J")
 	}
-
-	cmd.Stdout = os.Stdout
-	// Ignore errors as clearing the screen is optional and shouldn't prevent tool execution
-	_ = cmd.Run()
 }
 
 // Execute launches the tool as a child process with full terminal control.
