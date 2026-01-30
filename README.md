@@ -17,6 +17,8 @@ A beautiful, lightning-fast TUI launcher for your favorite AI agent command-line
 
 ### Easy Installation (No Go Required!)
 
+> **Note**: Pre-built binaries require at least one release to be published. If you encounter installation errors, the repository may not have releases yet. See alternative installation methods below.
+
 > **Security Note**: The installation scripts download and verify checksums from GitHub releases. If you prefer to review the scripts before running them, you can download them first:
 > - [install.sh](https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.sh) for Linux/macOS
 > - [install.ps1](https://raw.githubusercontent.com/huajianxiaowanzi/amazing-cli/main/install.ps1) for Windows
@@ -122,18 +124,22 @@ MIT
 
 ## 🚀 Creating a Release
 
-To publish pre-built binaries:
+To publish pre-built binaries, see [RELEASE.md](RELEASE.md) for detailed instructions.
+
+Quick start:
 
 1. Create and push a version tag:
    ```bash
-   git tag -a v1.0.0 -m "Release v1.0.0"
-   git push origin v1.0.0
+   git tag -a v0.1.0 -m "Release v0.1.0"
+   git push origin v0.1.0
    ```
 
 2. GitHub Actions will automatically:
    - Build binaries for all platforms
    - Create a GitHub release
    - Upload pre-built binaries
+   
+For first-time setup or troubleshooting, see [RELEASE.md](RELEASE.md).
 
 ## 🤝 Contributing
 

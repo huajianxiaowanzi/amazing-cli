@@ -22,7 +22,19 @@ try {
 } catch {
     Write-Host "Failed to get latest release information" -ForegroundColor Red
     Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "Please check your internet connection and that the repository has releases" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "It appears this repository doesn't have any releases yet." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Alternative installation methods:" -ForegroundColor Cyan
+    Write-Host "1. Install from source (requires Go):" -ForegroundColor White
+    Write-Host "   go install github.com/$repo@latest" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "2. Build from source:" -ForegroundColor White
+    Write-Host "   git clone https://github.com/$repo.git" -ForegroundColor Gray
+    Write-Host "   cd amazing-cli" -ForegroundColor Gray
+    Write-Host "   go build -o amazing.exe" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "For more information, visit: https://github.com/$repo" -ForegroundColor Cyan
     exit 1
 }
 
