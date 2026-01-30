@@ -115,11 +115,6 @@ func (m Model) View() string {
 	s.WriteString(titleStyle.Render("🚀 Amazing CLI - Select Your AI Tool"))
 	s.WriteString("\n\n")
 
-	// Token balance placeholder
-	balanceBar := renderBalanceBar(m.balance)
-	s.WriteString(balanceBar)
-	s.WriteString("\n\n")
-
 	// Tool list
 	for i, t := range m.tools {
 		cursor := "  "
@@ -135,14 +130,10 @@ func (m Model) View() string {
 			statusIcon = installedStyle.Render("✓")
 		}
 
-		// Render tool item
+		// Render tool item with inline token balance
 		toolName := style.Render(t.DisplayName)
-		s.WriteString(fmt.Sprintf("%s%s %s\n", cursor, statusIcon, toolName))
-		
-		// Description (only for selected item)
-		if m.cursor == i {
-			s.WriteString("   " + descStyle.Render(t.Description) + "\n")
-		}
+		balanceBar := renderInlineBalanceBar(m.balance)
+		s.WriteString(fmt.Sprintf("%s%s %s  %s\n", cursor, statusIcon, toolName, balanceBar))
 	}
 
 	// Help text
@@ -157,9 +148,9 @@ func (m Model) GetSelected() string {
 	return m.selected
 }
 
-// renderBalanceBar creates a visual representation of the token balance.
-func renderBalanceBar(balance config.Balance) string {
-	width := 40
+// renderInlineBalanceBar creates a compact visual representation of the token balance.
+func renderInlineBalanceBar(balance config.Balance) string {
+	width := 15
 	
 	// Clamp percentage to 0-100 range
 	percentage := balance.Percentage
@@ -186,8 +177,11 @@ func renderBalanceBar(balance config.Balance) string {
 		style = style.Foreground(lipgloss.Color("#04B575"))
 	}
 
-	label := fmt.Sprintf("Token Balance: %s", balance.Display)
-	return fmt.Sprintf("%s\n%s", label, style.Render(bar))
+	label := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#626262")).
+		Render(fmt.Sprintf("Token: %s", balance.Display))
+	
+	return fmt.Sprintf("%s %s", label, style.Render(bar))
 }
 
 // Run starts the TUI and returns the selected tool name.

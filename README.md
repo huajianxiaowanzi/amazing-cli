@@ -10,7 +10,7 @@ A beautiful, lightning-fast TUI launcher for your favorite AI agent command-line
 - **⚡ Instant Launch**: Select and execute AI tools with arrow keys + Enter
 - **🎨 Gorgeous TUI**: Built with Bubble Tea for a modern, responsive interface
 - **📊 Token Balance Tracking**: Ready-to-extend placeholder for monitoring your AI credits
-- **🔧 Tool-Agnostic**: Works with aider, claude, copilot, openai-cli, and more
+- **🔧 Tool-Agnostic**: Works with claude, copilot, codex, and more
 - **🛡️ Graceful Fallback**: Friendly messages when tools aren't installed
 
 ## 🎬 Quick Start
@@ -40,10 +40,9 @@ go run main.go
 
 ## 🛠️ Supported Tools
 
-- **aider** - AI pair programming in your terminal
-- **claude** - Anthropic's Claude AI assistant
+- **claude** - Claude Code by Anthropic
 - **copilot** - GitHub Copilot CLI
-- **openai-cli** - OpenAI command-line interface
+- **codex** - OpenAI's Codex
 
 *Easy to extend with more tools!*
 
