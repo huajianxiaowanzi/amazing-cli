@@ -10,11 +10,13 @@ import (
 
 // Tool represents an AI CLI tool that can be launched.
 type Tool struct {
-	Name        string   // Internal identifier (e.g., "aider")
-	DisplayName string   // Human-readable name (e.g., "Aider - AI Pair Programming")
-	Command     string   // Command to execute (e.g., "aider")
-	Description string   // Brief description of the tool
-	Args        []string // Default arguments to pass
+	Name        string            // Internal identifier (e.g., "aider")
+	DisplayName string            // Human-readable name (e.g., "Aider - AI Pair Programming")
+	Command     string            // Command to execute (e.g., "aider")
+	Description string            // Brief description of the tool
+	Args        []string          // Default arguments to pass
+	InstallCmds map[string]string // OS-specific installation commands (key: "windows", "darwin", "linux")
+	InstallURL  string            // URL to installation documentation
 }
 
 // IsInstalled checks if the tool is available on the system.
@@ -94,4 +96,40 @@ func (r *Registry) Get(name string) *Tool {
 		}
 	}
 	return nil
+}
+
+// Install attempts to install the tool on the current system.
+// Returns an error if installation is not available or fails.
+func (t *Tool) Install() error {
+	osType := runtime.GOOS
+
+	// Check if we have installation commands for this OS
+	installCmd, exists := t.InstallCmds[osType]
+	if !exists || installCmd == "" {
+		if t.InstallURL != "" {
+			return fmt.Errorf("automated installation not available for %s. Please visit: %s", osType, t.InstallURL)
+		}
+		return fmt.Errorf("automated installation not available for %s", osType)
+	}
+
+	// Execute the installation command
+	var cmd *exec.Cmd
+	if osType == "windows" {
+		cmd = exec.Command("powershell", "-Command", installCmd)
+	} else {
+		cmd = exec.Command("sh", "-c", installCmd)
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	return cmd.Run()
+}
+
+// HasInstallCommand checks if the tool has an installation command for the current OS.
+func (t *Tool) HasInstallCommand() bool {
+	osType := runtime.GOOS
+	cmd, exists := t.InstallCmds[osType]
+	return exists && cmd != ""
 }

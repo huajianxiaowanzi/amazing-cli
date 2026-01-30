@@ -40,6 +40,12 @@ func LoadDefaultTools() *tool.Registry {
 		Command:     "claude",
 		Description: "Claude Code by Anthropic",
 		Args:        []string{},
+		InstallCmds: map[string]string{
+			"darwin":  "brew install anthropics/tap/claude",
+			"linux":   "curl -fsSL https://anthropic.com/install.sh | sh",
+			"windows": "irm https://anthropic.com/install.ps1 | iex",
+		},
+		InstallURL: "https://docs.anthropic.com/claude/docs/cli",
 	})
 
 	registry.Register(&tool.Tool{
@@ -48,6 +54,12 @@ func LoadDefaultTools() *tool.Registry {
 		Command:     "github-copilot-cli",
 		Description: "GitHub's AI-powered CLI assistant",
 		Args:        []string{},
+		InstallCmds: map[string]string{
+			"darwin":  "brew install github/gh/gh-copilot",
+			"linux":   "npm install -g @githubnext/github-copilot-cli",
+			"windows": "npm install -g @githubnext/github-copilot-cli",
+		},
+		InstallURL: "https://github.com/github/copilot-cli",
 	})
 
 	registry.Register(&tool.Tool{
@@ -56,6 +68,12 @@ func LoadDefaultTools() *tool.Registry {
 		Command:     "codex",
 		Description: "OpenAI's code generation model",
 		Args:        []string{},
+		InstallCmds: map[string]string{
+			"darwin":  "pip install openai-codex",
+			"linux":   "pip install openai-codex",
+			"windows": "pip install openai-codex",
+		},
+		InstallURL: "https://openai.com/codex",
 	})
 
 	return registry

@@ -11,6 +11,23 @@ import (
 	"github.com/huajianxiaowanzi/amazing-cli/pkg/tool"
 )
 
+// installCompleteMsg is sent when installation completes
+type installCompleteMsg struct {
+	success bool
+	err     error
+}
+
+// performInstall runs the installation in a goroutine
+func performInstall(t *tool.Tool) tea.Cmd {
+	return func() tea.Msg {
+		err := t.Install()
+		return installCompleteMsg{
+			success: err == nil,
+			err:     err,
+		}
+	}
+}
+
 // Styles for the TUI
 var (
 	titleStyle = lipgloss.NewStyle().
@@ -48,16 +65,39 @@ var (
 	helpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#626262")).
 			MarginTop(1)
+
+	dialogStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#7D56F4")).
+			Padding(1, 2).
+			MarginTop(1).
+			MarginBottom(1)
+
+	warningStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FFB86C")).
+			Bold(true)
+
+	successMsgStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#04B575")).
+			Bold(true)
+
+	errorMsgStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FF6B6B")).
+			Bold(true)
 )
 
 // Model represents the TUI state.
 type Model struct {
-	tools    []*tool.Tool
-	cursor   int
-	selected string
-	balance  config.Balance
-	quitting bool
-	err      error
+	tools             []*tool.Tool
+	cursor            int
+	selected          string
+	balance           config.Balance
+	quitting          bool
+	err               error
+	showInstallPrompt bool
+	installing        bool
+	installError      string
+	installSuccess    bool
 }
 
 // NewModel creates a new TUI model with the given tool registry.
@@ -77,7 +117,64 @@ func (m Model) Init() tea.Cmd {
 // Update handles messages and updates the model (required by Bubble Tea).
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case installCompleteMsg:
+		m.installing = false
+		if msg.success {
+			m.installSuccess = true
+			m.installError = ""
+			// Refresh the tool's installation status
+			// Wait a bit and then allow user to select the tool
+		} else {
+			m.installError = fmt.Sprintf("%v", msg.err)
+		}
+		return m, nil
+
 	case tea.KeyMsg:
+		// If showing install prompt
+		if m.showInstallPrompt {
+			switch msg.String() {
+			case "enter", "y":
+				// Start installation
+				selectedTool := m.tools[m.cursor]
+				if selectedTool.HasInstallCommand() {
+					m.installing = true
+					m.showInstallPrompt = false
+					return m, performInstall(selectedTool)
+				}
+				m.showInstallPrompt = false
+				return m, nil
+
+			case "n", "q", "esc":
+				// Cancel installation
+				m.showInstallPrompt = false
+				m.installError = ""
+				m.installSuccess = false
+				return m, nil
+			}
+			return m, nil
+		}
+
+		// If installation completed successfully, allow closing dialog
+		if m.installSuccess {
+			switch msg.String() {
+			case "enter", "q", "esc":
+				m.installSuccess = false
+				return m, nil
+			}
+			return m, nil
+		}
+
+		// If there's an install error, allow closing dialog
+		if m.installError != "" {
+			switch msg.String() {
+			case "enter", "q", "esc":
+				m.installError = ""
+				return m, nil
+			}
+			return m, nil
+		}
+
+		// Normal navigation
 		switch msg.String() {
 		case "ctrl+c", "q":
 			m.quitting = true
@@ -95,7 +192,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 			// User selected a tool
-			m.selected = m.tools[m.cursor].Name
+			selectedTool := m.tools[m.cursor]
+
+			// Check if tool is installed
+			if !selectedTool.IsInstalled() {
+				// Show install prompt
+				m.showInstallPrompt = true
+				return m, nil
+			}
+
+			// Tool is installed, proceed to launch
+			m.selected = selectedTool.Name
 			return m, tea.Quit
 		}
 	}
@@ -134,6 +241,68 @@ func (m Model) View() string {
 		toolName := style.Render(t.DisplayName)
 		balanceBar := renderInlineBalanceBar(m.balance)
 		s.WriteString(fmt.Sprintf("%s%s %s  %s\n", cursor, statusIcon, toolName, balanceBar))
+	}
+
+	// Show install prompt dialog if active
+	if m.showInstallPrompt {
+		selectedTool := m.tools[m.cursor]
+		s.WriteString("\n")
+
+		var dialogContent strings.Builder
+		dialogContent.WriteString(warningStyle.Render(fmt.Sprintf("⚠️  %s is not installed", selectedTool.DisplayName)))
+		dialogContent.WriteString("\n\n")
+
+		if selectedTool.HasInstallCommand() {
+			dialogContent.WriteString("Would you like to install it automatically?\n")
+			dialogContent.WriteString(descStyle.Render("(Detection based on your operating system)"))
+			dialogContent.WriteString("\n\n")
+			dialogContent.WriteString(helpStyle.Render("Press Enter/Y to install • N/ESC to cancel"))
+		} else {
+			dialogContent.WriteString("Automated installation is not available.\n")
+			if selectedTool.InstallURL != "" {
+				dialogContent.WriteString(fmt.Sprintf("\nPlease visit: %s\n", selectedTool.InstallURL))
+			}
+			dialogContent.WriteString("\n")
+			dialogContent.WriteString(helpStyle.Render("Press any key to continue"))
+		}
+
+		s.WriteString(dialogStyle.Render(dialogContent.String()))
+		return s.String()
+	}
+
+	// Show installation in progress
+	if m.installing {
+		s.WriteString("\n")
+		var dialogContent strings.Builder
+		dialogContent.WriteString("🔄 Installing...\n")
+		dialogContent.WriteString(descStyle.Render("Please wait while we install the tool..."))
+		s.WriteString(dialogStyle.Render(dialogContent.String()))
+		return s.String()
+	}
+
+	// Show installation success message
+	if m.installSuccess {
+		s.WriteString("\n")
+		var dialogContent strings.Builder
+		dialogContent.WriteString(successMsgStyle.Render("✓ Installation completed successfully!"))
+		dialogContent.WriteString("\n\n")
+		dialogContent.WriteString("You can now launch the tool.\n")
+		dialogContent.WriteString(helpStyle.Render("Press any key to continue"))
+		s.WriteString(dialogStyle.Render(dialogContent.String()))
+		return s.String()
+	}
+
+	// Show installation error message
+	if m.installError != "" {
+		s.WriteString("\n")
+		var dialogContent strings.Builder
+		dialogContent.WriteString(errorMsgStyle.Render("❌ Installation failed"))
+		dialogContent.WriteString("\n\n")
+		dialogContent.WriteString(m.installError)
+		dialogContent.WriteString("\n\n")
+		dialogContent.WriteString(helpStyle.Render("Press any key to continue"))
+		s.WriteString(dialogStyle.Render(dialogContent.String()))
+		return s.String()
 	}
 
 	// Help text
