@@ -69,7 +69,9 @@ amazing
 
 - **claude** - Claude Code by Anthropic
 - **copilot** - GitHub Copilot CLI
+- **kimi** - Kimi Code by Moonshot
 - **codex** - OpenAI's Codex
+- **opencode** - OpenCode AI assistant
 
 *Easy to extend with more tools!*
 
