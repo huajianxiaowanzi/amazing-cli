@@ -36,7 +36,8 @@ func clearScreen() {
 		// \033[H moves cursor to home position, \033[2J clears the entire screen
 		fmt.Print("\033[H\033[2J")
 		// Flush to ensure the escape sequences are written immediately
-		os.Stdout.Sync()
+		// Ignore errors as clearing the screen is optional and shouldn't prevent tool execution
+		_ = os.Stdout.Sync()
 	}
 }
 
