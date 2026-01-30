@@ -270,6 +270,13 @@ func (m Model) View() string {
 	s.WriteString("\n\n")
 
 	// Tool list
+	maxNameWidth := 0
+	for _, t := range m.tools {
+		if w := lipgloss.Width(t.DisplayName); w > maxNameWidth {
+			maxNameWidth = w
+		}
+	}
+	const tokenGap = 20
 	for i, t := range m.tools {
 		cursor := "  "
 		style := normalStyle
@@ -285,9 +292,9 @@ func (m Model) View() string {
 		}
 
 		// Render tool item with inline token balance
-		toolName := style.Render(t.DisplayName)
+		toolName := style.Width(maxNameWidth).Render(t.DisplayName)
 		balanceBar := renderInlineBalanceBar(m.balance)
-		s.WriteString(fmt.Sprintf("%s%s %s  %s\n", cursor, statusIcon, toolName, balanceBar))
+		s.WriteString(fmt.Sprintf("%s%s %s%s%s\n", cursor, statusIcon, toolName, strings.Repeat(" ", tokenGap), balanceBar))
 
 		// Inline install options when tool is not installed and selected
 		if m.showInstallPrompt && m.cursor == i && !t.IsInstalled() {

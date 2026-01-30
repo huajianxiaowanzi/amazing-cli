@@ -37,7 +37,7 @@ func LoadDefaultTools() *tool.Registry {
 	// Note: Installation commands should be verified and updated based on actual installation methods
 	registry.Register(&tool.Tool{
 		Name:        "claude",
-		DisplayName: "claude code",
+		DisplayName: "claude-code",
 		Command:     "claude",
 		Description: "Claude Code by Anthropic",
 		Args:        []string{},

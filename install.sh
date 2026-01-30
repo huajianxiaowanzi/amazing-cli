@@ -168,9 +168,102 @@ echo ""
 echo "Run ${GREEN}amazing${NC} to start using the CLI"
 echo ""
 
-# Check if binary is in PATH
-if ! command -v "$BINARY_NAME" >/dev/null 2>&1; then
-    echo "${YELLOW}⚠️  Warning: $INSTALL_DIR is not in your PATH${NC}"
-    echo "Add it to your PATH by adding this line to your shell profile:"
-    echo "  export PATH=\"\$PATH:$INSTALL_DIR\""
+# Helpers for keeping $INSTALL_DIR in PATH
+path_contains_install_dir() {
+    case ":$PATH:" in
+        *:"$INSTALL_DIR":*)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+is_script_sourced() {
+    if [ -n "${BASH_SOURCE:-}" ] && [ "${BASH_SOURCE[0]}" != "$0" ]; then
+        return 0
+    fi
+    if [ -n "${ZSH_EVAL_CONTEXT:-}" ] && case $ZSH_EVAL_CONTEXT in *:file) true;; *) false;; esac; then
+        return 0
+    fi
+    return 1
+}
+
+is_interactive_shell() {
+    if [ -t 0 ] && [ -t 1 ]; then
+        return 0
+    fi
+    case "$-" in
+        *i*) return 0 ;;
+    esac
+    return 1
+}
+
+detect_shell_profile() {
+    local shell_name profile_file
+    shell_name=$(basename "${SHELL:-}" 2>/dev/null)
+    case "$shell_name" in
+        zsh)
+            if [ -f "$HOME/.zprofile" ]; then
+                profile_file="$HOME/.zprofile"
+            else
+                profile_file="$HOME/.zshrc"
+            fi
+            ;;
+        bash)
+            if [ -f "$HOME/.bash_profile" ]; then
+                profile_file="$HOME/.bash_profile"
+            elif [ -f "$HOME/.bashrc" ]; then
+                profile_file="$HOME/.bashrc"
+            else
+                profile_file="$HOME/.profile"
+            fi
+            ;;
+        *)
+            profile_file="$HOME/.profile"
+            ;;
+    esac
+    printf "%s" "$profile_file"
+}
+
+append_install_dir_to_profile() {
+    local profile_file
+    profile_file=$(detect_shell_profile)
+    [ -z "$profile_file" ] && return 1
+    if [ ! -f "$profile_file" ]; then
+        mkdir -p "$(dirname "$profile_file")" 2>/dev/null || true
+        touch "$profile_file"
+    fi
+    if grep -Fq "$INSTALL_DIR" "$profile_file" >/dev/null 2>&1; then
+        printf "%s" "$profile_file"
+        return 0
+    fi
+    {
+        printf "\n# added by amazing-cli installer\n"
+        printf 'export PATH="%s:$PATH"\n' "$INSTALL_DIR"
+    } >> "$profile_file"
+    printf "%s" "$profile_file"
+}
+
+if ! path_contains_install_dir; then
+    profile_file=$(append_install_dir_to_profile)
+    if [ -n "$profile_file" ]; then
+        echo "${GREEN}Added $INSTALL_DIR to PATH in $profile_file${NC}"
+        if is_script_sourced; then
+            . "$profile_file"
+            echo "${GREEN}PATH updated in current shell.${NC}"
+        elif is_interactive_shell && [ -n "${SHELL:-}" ] && [ -z "${CI:-}" ]; then
+            echo "${GREEN}Restarting your shell to apply PATH changes...${NC}"
+            exec "$SHELL" -l
+        else
+            echo "Restart your shell or run ${GREEN}source \"$profile_file\"${NC} to apply the change."
+        fi
+    else
+        echo "${YELLOW}⚠️  Warning: $INSTALL_DIR is not in your PATH${NC}"
+        echo "Add it to your PATH by adding this line to your shell profile:"
+        echo "  export PATH=\"\$PATH:$INSTALL_DIR\""
+    fi
+else
+    echo "${GREEN}$INSTALL_DIR already in PATH${NC}"
 fi
+
+export PATH="$INSTALL_DIR:$PATH"
