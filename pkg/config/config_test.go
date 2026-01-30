@@ -12,12 +12,12 @@ func TestLoadDefaultTools(t *testing.T) {
 	}
 
 	tools := registry.List()
-	if len(tools) != 3 {
-		t.Errorf("Expected 3 tools, got %d", len(tools))
+	if len(tools) != 4 {
+		t.Errorf("Expected 4 tools, got %d", len(tools))
 	}
 
 	// Check that all expected tools are present
-	expectedTools := []string{"claude", "copilot", "aider"}
+	expectedTools := []string{"claude", "copilot", "aider", "codex"}
 	for _, name := range expectedTools {
 		tool := registry.Get(name)
 		if tool == nil {
