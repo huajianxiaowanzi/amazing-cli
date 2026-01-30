@@ -142,11 +142,7 @@ else
 fi
 
 # Install
-if [ "$OS" = "Windows" ]; then
-    INSTALL_DIR="$HOME/bin"
-else
-    INSTALL_DIR="/usr/local/bin"
-fi
+INSTALL_DIR="$HOME/bin"
 
 echo "Installing to $INSTALL_DIR..."
 
