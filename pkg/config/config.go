@@ -38,7 +38,7 @@ func LoadDefaultTools() *tool.Registry {
 		Name:        "claude",
 		DisplayName: "Claude Code",
 		Command:     "claude",
-		Description: "Conversational AI by Anthropic",
+		Description: "Claude Code by Anthropic",
 		Args:        []string{},
 	})
 
