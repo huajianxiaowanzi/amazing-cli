@@ -86,14 +86,10 @@ func (r *Registry) Register(tool *Tool) {
 // List returns all registered tools sorted by installation status.
 // Installed tools appear first, followed by uninstalled tools.
 func (r *Registry) List() []*Tool {
-	// Create a copy to avoid modifying the internal slice
-	result := make([]*Tool, len(r.tools))
-	copy(result, r.tools)
-	
 	// Sort: installed tools first, then uninstalled
-	// We use a stable sort to preserve registration order within each group
+	// This preserves the registration order within each group
 	var installed, uninstalled []*Tool
-	for _, tool := range result {
+	for _, tool := range r.tools {
 		if tool.IsInstalled() {
 			installed = append(installed, tool)
 		} else {
@@ -102,7 +98,9 @@ func (r *Registry) List() []*Tool {
 	}
 	
 	// Combine: installed first, then uninstalled
-	result = append(installed, uninstalled...)
+	result := make([]*Tool, 0, len(r.tools))
+	result = append(result, installed...)
+	result = append(result, uninstalled...)
 	return result
 }
 
