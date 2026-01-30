@@ -68,8 +68,8 @@ if [ -z "$LATEST_RELEASE" ]; then
     echo ""
     echo "2. Build from source:"
     echo "   ${YELLOW}git clone https://github.com/$REPO.git${NC}"
-    echo "   ${YELLOW}cd amazing-cli${NC}"
-    echo "   ${YELLOW}go build -o amazing${NC}"
+    echo "   ${YELLOW}cd ${REPO##*/}${NC}"
+    echo "   ${YELLOW}go build -o $BINARY_NAME${NC}"
     echo ""
     echo "For more information, visit: ${GREEN}https://github.com/$REPO${NC}"
     exit 1

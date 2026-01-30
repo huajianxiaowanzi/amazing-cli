@@ -60,7 +60,7 @@ This will make the installation scripts work, as they require at least one relea
 ## Version Numbering
 
 Follow semantic versioning (SemVer):
-- `v1.0.0` - Major release (breaking changes)
+- `v2.0.0` - Major release (breaking changes from v1.x.x)
 - `v0.1.0` - Minor release (new features, backward compatible)
 - `v0.0.1` - Patch release (bug fixes)
 

@@ -31,8 +31,8 @@ try {
     Write-Host ""
     Write-Host "2. Build from source:" -ForegroundColor White
     Write-Host "   git clone https://github.com/$repo.git" -ForegroundColor Gray
-    Write-Host "   cd amazing-cli" -ForegroundColor Gray
-    Write-Host "   go build -o amazing.exe" -ForegroundColor Gray
+    Write-Host "   cd $($repo -replace '.*/')" -ForegroundColor Gray
+    Write-Host "   go build -o $binaryName" -ForegroundColor Gray
     Write-Host ""
     Write-Host "For more information, visit: https://github.com/$repo" -ForegroundColor Cyan
     exit 1
