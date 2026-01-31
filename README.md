@@ -58,6 +58,67 @@ go run github.com/huajianxiaowanzi/amazing-cli@latest
 amazing
 ```
 
+### Installing AI Tools
+
+After installing Amazing CLI, you can install the AI tools from within the application or manually:
+
+#### Automated Installation
+1. Run `amazing`
+2. Navigate to an uninstalled tool using arrow keys
+3. Press Enter to see installation options
+4. Follow the on-screen instructions
+
+#### Manual Installation
+
+**Claude Code:**
+```bash
+# Linux & macOS
+curl -fsSL https://claude.ai/install.sh | bash
+
+# Windows (PowerShell)
+irm https://claude.ai/install.ps1 | iex
+```
+Learn more: [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code/getting-started)
+
+**GitHub Copilot:**
+```bash
+# Linux & macOS
+curl -fsSL https://gh.io/copilot-install | bash
+
+# Windows (PowerShell)
+winget install GitHub.Copilot
+
+# Alternative (all platforms)
+npm install -g @github/copilot
+```
+Learn more: [GitHub Copilot CLI](https://github.com/github/copilot-cli)
+
+**Kimi Code:**
+```bash
+# Linux & macOS
+curl -L https://code.kimi.com/install.sh | bash
+
+# Windows (PowerShell)
+irm https://code.kimi.com/install.ps1 | iex
+```
+
+**OpenAI Codex:**
+```bash
+# macOS
+brew install codex || npm i -g @openai/codex
+
+# Linux & Windows
+npm i -g @openai/codex
+```
+Learn more: [OpenAI Codex](https://platform.openai.com/docs/guides/code)
+
+**OpenCode:**
+```bash
+# All platforms
+npm install -g opencode-cli
+```
+Learn more: [OpenCode CLI](https://github.com/opencode/opencode-cli)
+
 ## 🎮 Usage
 
 1. Launch the TUI: `amazing`
@@ -69,7 +130,9 @@ amazing
 
 - **claude** - Claude Code by Anthropic
 - **copilot** - GitHub Copilot CLI
+- **kimi** - Kimi Code by Moonshot
 - **codex** - OpenAI's Codex
+- **opencode** - OpenCode AI assistant
 
 *Easy to extend with more tools!*
 

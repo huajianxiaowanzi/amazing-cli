@@ -72,11 +72,11 @@ func LoadDefaultTools() *tool.Registry {
 		Description: "Kimi Code by Moonshot",
 		Args:        []string{},
 		InstallCmds: map[string]string{
-			"darwin":     "curl -L code.kimi.com/install.sh | bash",
-			"linux":      "curl -L code.kimi.com/install.sh | bash",
+			"darwin":     "curl -L https://code.kimi.com/install.sh | bash",
+			"linux":      "curl -L https://code.kimi.com/install.sh | bash",
 			"windows_ps": "irm https://code.kimi.com/install.ps1 | iex",
 		},
-		InstallURL: "https://aider.chat",
+		InstallURL: "https://code.kimi.com",
 	})
 
 	registry.Register(&tool.Tool{
@@ -92,6 +92,21 @@ func LoadDefaultTools() *tool.Registry {
 			"windows_cmd": "npm i -g @openai/codex",
 		},
 		InstallURL: "https://platform.openai.com/docs/guides/code",
+	})
+
+	registry.Register(&tool.Tool{
+		Name:        "opencode",
+		DisplayName: "opencode",
+		Command:     "opencode",
+		Description: "OpenCode AI assistant",
+		Args:        []string{},
+		InstallCmds: map[string]string{
+			"darwin":      "npm install -g opencode-cli",
+			"linux":       "npm install -g opencode-cli",
+			"windows_ps":  "npm install -g opencode-cli",
+			"windows_cmd": "npm install -g opencode-cli",
+		},
+		InstallURL: "https://github.com/opencode/opencode-cli",
 	})
 
 	return registry
