@@ -96,17 +96,17 @@ func LoadDefaultTools() *tool.Registry {
 
 	registry.Register(&tool.Tool{
 		Name:        "opencode",
-		DisplayName: "opencode",
+		DisplayName: "OpenCode ",
 		Command:     "opencode",
-		Description: "OpenCode AI assistant",
+		Description: "OpenCode ",
 		Args:        []string{},
 		InstallCmds: map[string]string{
-			"darwin":      "npm install -g opencode-cli",
-			"linux":       "npm install -g opencode-cli",
-			"windows_ps":  "npm install -g opencode-cli",
-			"windows_cmd": "npm install -g opencode-cli",
+			"darwin":      "brew install anomalyco/tap/opencode || curl -fsSL https://opencode.ai/install | bash",
+			"linux":       "curl -fsSL https://opencode.ai/install | bash",
+			"windows_ps":  "npm i -g opencode-ai",
+			"windows_cmd": "npm i -g opencode-ai",
 		},
-		InstallURL: "https://github.com/opencode/opencode-cli",
+		InstallURL: "https://opencode.ai",
 	})
 
 	return registry

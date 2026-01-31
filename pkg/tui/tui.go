@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/huajianxiaowanzi/amazing-cli/pkg/config"
 	"github.com/huajianxiaowanzi/amazing-cli/pkg/tool"
@@ -272,7 +272,12 @@ func (m Model) View() string {
 	// Tool list
 	maxNameWidth := 0
 	for _, t := range m.tools {
-		if w := lipgloss.Width(t.DisplayName); w > maxNameWidth {
+		// Calculate width with styles applied to account for padding
+		w := lipgloss.Width(normalStyle.Render(t.DisplayName))
+		if sw := lipgloss.Width(selectedStyle.Render(t.DisplayName)); sw > w {
+			w = sw
+		}
+		if w > maxNameWidth {
 			maxNameWidth = w
 		}
 	}
@@ -292,9 +297,12 @@ func (m Model) View() string {
 		}
 
 		// Render tool item with inline token balance
-		toolName := style.Width(maxNameWidth).Render(t.DisplayName)
+		toolName := style.Render(t.DisplayName)
+		toolNameWidth := lipgloss.Width(toolName)
 		balanceBar := renderInlineBalanceBar(m.balance)
-		s.WriteString(fmt.Sprintf("%s%s %s%s%s\n", cursor, statusIcon, toolName, strings.Repeat(" ", tokenGap), balanceBar))
+		// Calculate padding to align all token bars: (maxNameWidth - currentNameWidth) + fixedGap
+		padding := maxNameWidth - toolNameWidth + tokenGap
+		s.WriteString(fmt.Sprintf("%s%s %s%s%s\n", cursor, statusIcon, toolName, strings.Repeat(" ", padding), balanceBar))
 
 		// Inline install options when tool is not installed and selected
 		if m.showInstallPrompt && m.cursor == i && !t.IsInstalled() {
