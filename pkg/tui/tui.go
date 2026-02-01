@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"sort"
 	"strings"
 	"time"
 
@@ -32,72 +33,98 @@ func performInstall(t *tool.Tool) tea.Cmd {
 	}
 }
 
-// Styles for the TUI
+// Styles for the TUI - Cyberpunk Theme
 var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#7D56F4")).
-			MarginTop(1).
-			MarginBottom(1)
+	// Cyberpunk Neon Colors
+	neonCyan   = lipgloss.Color("#00F5FF")
+	neonPink   = lipgloss.Color("#FF00FF")
+	neonPurple = lipgloss.Color("#9D00FF")
+	neonYellow = lipgloss.Color("#FFFF00")
+	neonGreen  = lipgloss.Color("#39FF14")
+	neonOrange = lipgloss.Color("#FF9500")
+	neonRed    = lipgloss.Color("#FF0040")
+	darkBg     = lipgloss.Color("#0D0D0D")
+	gridDark   = lipgloss.Color("#1A1A2E")
+	gridLine   = lipgloss.Color("#16213E")
+	glowWhite  = lipgloss.Color("#E0E0E0")
+	mutedText  = lipgloss.Color("#6B7280")
 
+	// Title - 保持彩虹效果
+	titleStyle = lipgloss.NewStyle().
+			MarginTop(1).
+			MarginBottom(2)
+
+	// Selected Item - 赛博朋克霓虹效果
 	selectedStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#FAFAFA")).
-			Background(lipgloss.Color("#7D56F4")).
-			PaddingLeft(1).
-			PaddingRight(1)
+			Foreground(lipgloss.Color("#000000")).
+			Background(neonCyan).
+			PaddingLeft(2).
+			PaddingRight(2)
 
+	// Normal Item
+	normalStyle = lipgloss.NewStyle().
+			Foreground(glowWhite).
+			PaddingLeft(2).
+			PaddingRight(2)
+
+	// Submenu Items - 无背景色，仅用前景色区分，无padding
 	submenuStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#CFCFCF"))
+			Foreground(mutedText)
 
 	submenuSelectedStyle = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(lipgloss.Color("#FAFAFA")).
-				Background(lipgloss.Color("#7D56F4")).
-				PaddingLeft(1).
-				PaddingRight(1)
+				Foreground(neonCyan)
 
-	normalStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FAFAFA")).
-			PaddingLeft(1).
-			PaddingRight(1)
-
-	descStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#626262")).
-			Italic(true)
-
+	// Status Icons - 赛博朋克风格
 	installedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#04B575"))
-
-	notInstalledStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FF6B6B"))
-
-	balanceStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#04B575")).
+			Foreground(neonGreen).
 			Bold(true)
 
-	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#626262")).
-			MarginTop(1)
+	notInstalledStyle = lipgloss.NewStyle().
+				Foreground(neonRed).
+				Bold(true)
 
+	// Token Balance Bar
+	balanceStyle = lipgloss.NewStyle().
+			Foreground(neonCyan).
+			Bold(true)
+
+	// Description & Help
+	descStyle = lipgloss.NewStyle().
+			Foreground(mutedText).
+			Italic(true).
+			PaddingLeft(2)
+
+	helpStyle = lipgloss.NewStyle().
+			Foreground(mutedText).
+			MarginTop(2).
+			MarginBottom(1)
+
+	// Dialog & Messages
 	dialogStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#7D56F4")).
+			BorderForeground(neonCyan).
+			Background(gridDark).
 			Padding(1, 2).
 			MarginTop(1).
 			MarginBottom(1)
 
-	warningStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFB86C")).
-			Bold(true)
-
+	// Status Messages
 	successMsgStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#04B575")).
-			Bold(true)
+			Foreground(neonGreen).
+			Bold(true).
+			PaddingLeft(2)
 
 	errorMsgStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF6B6B")).
-			Bold(true)
+			Foreground(neonRed).
+			Bold(true).
+			PaddingLeft(2)
+
+	warningStyle = lipgloss.NewStyle().
+			Foreground(neonYellow).
+			Bold(true).
+			PaddingLeft(2)
 )
 
 // Model represents the TUI state.
@@ -115,6 +142,7 @@ type Model struct {
 	installing        bool
 	installError      string
 	installSuccess    bool
+	terminalHeight    int // 终端高度，用于固定底部帮助文本
 }
 
 // NewModel creates a new TUI model with the given tool registry.
@@ -147,6 +175,11 @@ func (m Model) Init() tea.Cmd {
 // Update handles messages and updates the model (required by Bubble Tea).
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// 记录终端高度，用于固定底部帮助文本
+		m.terminalHeight = msg.Height
+		return m, nil
+
 	case installCompleteMsg:
 		m.installing = false
 		if msg.success {
@@ -176,24 +209,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter", "y":
 				selectedTool := m.tools[m.cursor]
 				if m.promptCursor == 0 {
-					// Start installation
-					if selectedTool.HasInstallCommand() {
-						m.installing = true
-						m.showInstallPrompt = false
-						return m, tea.Batch(performInstall(selectedTool), m.spinner.Tick)
-					}
-					if selectedTool.InstallURL != "" {
-						m.installError = fmt.Sprintf("automated installation not available. Please visit: %s", selectedTool.InstallURL)
-					} else {
-						m.installError = "automated installation not available"
-					}
+					// Cancel - close prompt
 					m.showInstallPrompt = false
+					m.installError = ""
+					m.installSuccess = false
 					return m, nil
 				}
-				// Back
+				// Install (promptCursor == 1)
+				if selectedTool.HasInstallCommand() {
+					m.installing = true
+					m.showInstallPrompt = false
+					return m, tea.Batch(performInstall(selectedTool), m.spinner.Tick)
+				}
+				if selectedTool.InstallURL != "" {
+					m.installError = fmt.Sprintf("automated installation not available. Please visit: %s", selectedTool.InstallURL)
+				} else {
+					m.installError = "automated installation not available"
+				}
 				m.showInstallPrompt = false
-				m.installError = ""
-				m.installSuccess = false
 				return m, nil
 
 			case "n", "q", "esc":
@@ -243,8 +276,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "enter":
-			// User selected a tool
-			selectedTool := m.tools[m.cursor]
+			// User selected a tool - 需要先排序获取正确的工具
+			sortedTools := m.getSortedTools()
+			selectedTool := sortedTools[m.cursor]
 
 			// Check if tool is installed
 			if !selectedTool.IsInstalled() {
@@ -254,7 +288,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			// Tool is installed, proceed to launch
+			// Tool is installed, update last used time and proceed to launch
+			selectedTool.LastUsed = time.Now()
 			m.selected = selectedTool.Name
 			return m, tea.Quit
 		}
@@ -281,9 +316,11 @@ func (m Model) View() string {
 	s.WriteString(m.title)
 	s.WriteString("\n\n")
 
-	// Tool list
+	// Tool list - 按安装状态分组，已安装的按LRU排序
+	sortedTools := m.getSortedTools()
+
 	maxNameWidth := 0
-	for _, t := range m.tools {
+	for _, t := range sortedTools {
 		// Calculate width with styles applied to account for padding
 		w := lipgloss.Width(normalStyle.Render(t.DisplayName))
 		if sw := lipgloss.Width(selectedStyle.Render(t.DisplayName)); sw > w {
@@ -294,18 +331,30 @@ func (m Model) View() string {
 		}
 	}
 	const tokenGap = 20
-	for i, t := range m.tools {
-		cursor := "  "
+	for i, t := range sortedTools {
+		isSelected := m.cursor == i
 		style := normalStyle
-		if m.cursor == i {
-			cursor = "▶ "
+
+		// Cursor indicator
+		var cursor string
+		if isSelected {
 			style = selectedStyle
+			cursor = lipgloss.NewStyle().
+				Foreground(neonCyan).
+				Bold(true).
+				Render("▶ ")
+		} else {
+			cursor = lipgloss.NewStyle().
+				Foreground(gridLine).
+				Render("  ")
 		}
 
 		// Check if tool is installed
-		statusIcon := notInstalledStyle.Render("✗")
+		var statusIcon string
 		if t.IsInstalled() {
-			statusIcon = installedStyle.Render("✓")
+			statusIcon = installedStyle.Render("◉")
+		} else {
+			statusIcon = notInstalledStyle.Render("○")
 		}
 
 		// Render tool item with inline token balance
@@ -316,24 +365,27 @@ func (m Model) View() string {
 		padding := maxNameWidth - toolNameWidth + tokenGap
 		s.WriteString(fmt.Sprintf("%s%s %s%s%s\n", cursor, statusIcon, toolName, strings.Repeat(" ", padding), balanceBar))
 
-		// Inline install options when tool is not installed and selected
+		// Inline install options when tool is not installed and selected - 两行箭头显示
 		if m.showInstallPrompt && m.cursor == i && !t.IsInstalled() {
-			installLabel := "自动安装"
+			cancelLabel := "Cancel"
+			installLabel := "Install"
 			if !t.HasInstallCommand() {
-				installLabel = "自动安装 (不可用)"
+				installLabel = "Install (N/A)"
 			}
-			backLabel := "返回"
 
-			installStyle := submenuStyle
-			backStyle := submenuStyle
+			// Cancel 行 - 选中时显示»，未选中时显示空格
 			if m.promptCursor == 0 {
-				installStyle = submenuSelectedStyle
+				s.WriteString(fmt.Sprintf("      %s %s\n", submenuSelectedStyle.Render("»"), submenuSelectedStyle.Render(cancelLabel)))
 			} else {
-				backStyle = submenuSelectedStyle
+				s.WriteString(fmt.Sprintf("       %s\n", submenuStyle.Render(cancelLabel)))
 			}
 
-			s.WriteString(fmt.Sprintf("   ├─ %s\n", installStyle.Render(installLabel)))
-			s.WriteString(fmt.Sprintf("   └─ %s\n", backStyle.Render(backLabel)))
+			// Install 行 - 选中时显示»，未选中时显示空格
+			if m.promptCursor == 1 {
+				s.WriteString(fmt.Sprintf("      %s %s\n", submenuSelectedStyle.Render("»"), submenuSelectedStyle.Render(installLabel)))
+			} else {
+				s.WriteString(fmt.Sprintf("       %s\n", submenuStyle.Render(installLabel)))
+			}
 		}
 	}
 
@@ -369,7 +421,7 @@ func (m Model) View() string {
 	// Help text
 	s.WriteString("\n")
 	if m.showInstallPrompt {
-		s.WriteString(helpStyle.Render("↑/↓: 选择 • enter: 确认 • esc: 返回"))
+		s.WriteString(helpStyle.Render("↑/↓: select • enter: confirm • esc: cancel"))
 	} else {
 		s.WriteString(helpStyle.Render("↑/↓: navigate • enter: launch • q: quit"))
 	}
@@ -380,6 +432,32 @@ func (m Model) View() string {
 // GetSelected returns the name of the selected tool, if any.
 func (m Model) GetSelected() string {
 	return m.selected
+}
+
+// getSortedTools returns tools sorted by installation status and LRU (最近使用的在前)
+func (m Model) getSortedTools() []*tool.Tool {
+	sorted := make([]*tool.Tool, len(m.tools))
+	copy(sorted, m.tools)
+
+	sort.SliceStable(sorted, func(i, j int) bool {
+		installedI := sorted[i].IsInstalled()
+		installedJ := sorted[j].IsInstalled()
+
+		// 如果安装状态不同，已安装的排在前面
+		if installedI != installedJ {
+			return installedI && !installedJ
+		}
+
+		// 如果都已安装，按最后使用时间降序排序（最近使用的在前）
+		if installedI && installedJ {
+			return sorted[i].LastUsed.After(sorted[j].LastUsed)
+		}
+
+		// 都未安装，保持原有顺序
+		return false
+	})
+
+	return sorted
 }
 
 // renderInlineBalanceBar creates a compact visual representation of the token balance.
@@ -396,26 +474,34 @@ func renderInlineBalanceBar(balance config.Balance) string {
 	}
 
 	filled := (width * percentage) / 100
-	bar := strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
+	empty := width - filled
 
-	style := lipgloss.NewStyle()
+	filledBar := strings.Repeat("█", filled)
+	emptyBar := strings.Repeat("░", empty)
+
+	var barColor lipgloss.Color
 	switch balance.Color {
 	case "green":
-		style = style.Foreground(lipgloss.Color("#04B575"))
+		barColor = neonGreen
 	case "yellow":
-		style = style.Foreground(lipgloss.Color("#FFB86C"))
+		barColor = neonYellow
 	case "red":
-		style = style.Foreground(lipgloss.Color("#FF6B6B"))
+		barColor = neonRed
 	default:
-		// Default to green for unknown colors
-		style = style.Foreground(lipgloss.Color("#04B575"))
+		barColor = neonGreen
 	}
 
-	label := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#626262")).
-		Render(fmt.Sprintf("Token: %s", balance.Display))
+	barStyle := lipgloss.NewStyle().Foreground(barColor)
+	emptyStyle := lipgloss.NewStyle().Foreground(gridLine)
 
-	return fmt.Sprintf("%s %s", label, style.Render(bar))
+	labelStyle := lipgloss.NewStyle().
+		Foreground(neonCyan).
+		Bold(true)
+
+	label := labelStyle.Render(fmt.Sprintf("Token: %s", balance.Display))
+	barStr := barStyle.Render(filledBar) + emptyStyle.Render(emptyBar)
+
+	return fmt.Sprintf("%s %s", label, barStr)
 }
 
 func renderBlockColorTitle(text string, hueOffset float64) string {
@@ -473,16 +559,26 @@ func renderBlockColorTitle(text string, hueOffset float64) string {
 	}
 	totalLetters := currentLetter
 
+	// Cyberpunk neon color palette for title
+	cyberpunkColors := []string{
+		"#00F5FF", // 霓虹青
+		"#FF00FF", // 霓虹粉
+		"#9D00FF", // 霓虹紫
+		"#39FF14", // 霓虹绿
+		"#FF9500", // 霓虹橙
+		"#FF0040", // 霓虹红
+		"#00FFFF", // 青色
+		"#FF1493", // 深粉
+		"#7FFF00", // 黄绿
+		"#FF69B4", // 热粉
+	}
+
 	colors := make([]lipgloss.Style, totalLetters)
-	hue := hueOffset
 	for i := 0; i < totalLetters; i++ {
-		rv, gv, bv := hslToRGB(hue, 0.85, 0.55)
-		color := lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", rv, gv, bv))
-		colors[i] = lipgloss.NewStyle().Foreground(color)
-		hue += 35.0
-		if hue >= 360.0 {
-			hue -= 360.0
-		}
+		colorIdx := (i + int(hueOffset/36)) % len(cyberpunkColors)
+		colors[i] = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(cyberpunkColors[colorIdx])).
+			Bold(true)
 	}
 
 	var b strings.Builder

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // Tool represents an AI CLI tool that can be launched.
@@ -20,6 +21,7 @@ type Tool struct {
 	Args        []string          // Default arguments to pass
 	InstallCmds map[string]string // OS-specific installation commands (key: "windows", "darwin", "linux")
 	InstallURL  string            // URL to installation documentation
+	LastUsed    time.Time         // 最后使用时间，用于LRU排序
 }
 
 // IsInstalled checks if the tool is available on the system.
@@ -99,7 +101,7 @@ func (r *Registry) List() []*Tool {
 			uninstalled = append(uninstalled, tool)
 		}
 	}
-	
+
 	// Combine: installed first, then uninstalled
 	result := make([]*Tool, 0, len(r.tools))
 	result = append(result, installed...)
