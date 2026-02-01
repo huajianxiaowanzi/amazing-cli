@@ -3,7 +3,10 @@ package tui
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -105,6 +108,7 @@ type Model struct {
 	spinner           spinner.Model
 	selected          string
 	balance           config.Balance
+	title             string
 	quitting          bool
 	err               error
 	showInstallPrompt bool
@@ -118,12 +122,20 @@ func NewModel(registry *tool.Registry) Model {
 	spin := spinner.New()
 	spin.Spinner = spinner.Line
 	spin.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
+	rand.Seed(time.Now().UnixNano())
+	title := `    ___                          _                     ___ 
+   /   |  ____ ___  ____ _____  (_)___  ____ _   _____/ (_)
+  / /| | / __ ` + "`" + `__ \/ __ ` + "`" + `/_  / / / __ \/ __ ` + "`" + `/  / ___/ / / 
+ / ___ |/ / / / / / /_/ / / /_/ / / / / /_/ /  / /__/ / /  
+/_/  |_/_/ /_/ /_/\__,_/ /___/_/_/ /_/\__, /   \___/_/_/   
+                                     /____/               `
 	return Model{
 		tools:        registry.List(),
 		cursor:       0,
 		promptCursor: 0,
 		spinner:      spin,
 		balance:      config.GetDefaultBalance(),
+		title:        renderBlockColorTitle(title, rand.Float64()*360.0),
 	}
 }
 
@@ -266,7 +278,7 @@ func (m Model) View() string {
 	var s strings.Builder
 
 	// Title
-	s.WriteString(titleStyle.Render("🚀 Amazing CLI - Select Your AI Tool"))
+	s.WriteString(m.title)
 	s.WriteString("\n\n")
 
 	// Tool list
@@ -404,6 +416,123 @@ func renderInlineBalanceBar(balance config.Balance) string {
 		Render(fmt.Sprintf("Token: %s", balance.Display))
 
 	return fmt.Sprintf("%s %s", label, style.Render(bar))
+}
+
+func renderBlockColorTitle(text string, hueOffset float64) string {
+	lines := strings.Split(text, "\n")
+	height := len(lines)
+	maxWidth := 0
+	for _, line := range lines {
+		if len(line) > maxWidth {
+			maxWidth = len(line)
+		}
+	}
+	if maxWidth == 0 || height == 0 {
+		return ""
+	}
+
+	grid := make([][]rune, height)
+	for i, line := range lines {
+		row := []rune(line)
+		if len(row) < maxWidth {
+			padding := make([]rune, maxWidth-len(row))
+			for j := range padding {
+				padding[j] = ' '
+			}
+			row = append(row, padding...)
+		}
+		grid[i] = row
+	}
+
+	occupied := make([]bool, maxWidth)
+	for c := 0; c < maxWidth; c++ {
+		for r := 0; r < height; r++ {
+			if grid[r][c] != ' ' {
+				occupied[c] = true
+				break
+			}
+		}
+	}
+
+	letterIndex := make([]int, maxWidth)
+	for i := range letterIndex {
+		letterIndex[i] = -1
+	}
+	currentLetter := 0
+	inLetter := false
+	for c := 0; c < maxWidth; c++ {
+		if occupied[c] {
+			if !inLetter {
+				inLetter = true
+				currentLetter++
+			}
+			letterIndex[c] = currentLetter - 1
+		} else {
+			inLetter = false
+		}
+	}
+	totalLetters := currentLetter
+
+	colors := make([]lipgloss.Style, totalLetters)
+	hue := hueOffset
+	for i := 0; i < totalLetters; i++ {
+		rv, gv, bv := hslToRGB(hue, 0.85, 0.55)
+		color := lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", rv, gv, bv))
+		colors[i] = lipgloss.NewStyle().Foreground(color)
+		hue += 35.0
+		if hue >= 360.0 {
+			hue -= 360.0
+		}
+	}
+
+	var b strings.Builder
+	for r := 0; r < height; r++ {
+		for c := 0; c < maxWidth; c++ {
+			ch := grid[r][c]
+			if ch == ' ' {
+				b.WriteRune(ch)
+				continue
+			}
+			idx := letterIndex[c]
+			if idx >= 0 && idx < totalLetters {
+				b.WriteString(colors[idx].Render(string(ch)))
+			} else {
+				b.WriteRune(ch)
+			}
+		}
+		if r < height-1 {
+			b.WriteRune('\n')
+		}
+	}
+	return b.String()
+}
+
+func hslToRGB(h, s, l float64) (uint8, uint8, uint8) {
+	h = math.Mod(h, 360.0) / 360.0
+	c := (1 - math.Abs(2*l-1)) * s
+	x := c * (1 - math.Abs(math.Mod(h*6, 2)-1))
+	m := l - c/2
+
+	var r, g, b float64
+	switch {
+	case 0 <= h && h < 1.0/6.0:
+		r, g, b = c, x, 0
+	case 1.0/6.0 <= h && h < 2.0/6.0:
+		r, g, b = x, c, 0
+	case 2.0/6.0 <= h && h < 3.0/6.0:
+		r, g, b = 0, c, x
+	case 3.0/6.0 <= h && h < 4.0/6.0:
+		r, g, b = 0, x, c
+	case 4.0/6.0 <= h && h < 5.0/6.0:
+		r, g, b = x, 0, c
+	default:
+		r, g, b = c, 0, x
+	}
+
+	r = (r + m) * 255
+	g = (g + m) * 255
+	b = (b + m) * 255
+	return uint8(r + 0.5), uint8(g + 0.5), uint8(b + 0.5)
 }
 
 // Run starts the TUI and returns the selected tool name.
