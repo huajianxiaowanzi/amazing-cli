@@ -18,6 +18,16 @@ type Balance struct {
 	Color      string // Color hint for display (e.g., "green", "yellow", "red")
 }
 
+// ToToolBalance converts config.Balance to tool.Balance.
+// This ensures consistency when converting between the two types.
+func (b Balance) ToToolBalance() tool.Balance {
+	return tool.Balance{
+		Percentage: b.Percentage,
+		Display:    b.Display,
+		Color:      b.Color,
+	}
+}
+
 // GetDefaultBalance returns the default placeholder balance.
 // In the future, this can be replaced with actual API calls to check balances.
 func GetDefaultBalance() Balance {
@@ -32,19 +42,6 @@ func GetDefaultBalance() Balance {
 // Implementations can query actual API endpoints for real balance data.
 type BalanceProvider interface {
 	GetBalance(toolName string) (Balance, error)
-}
-
-// GetBalanceForTool returns the balance for a specific tool.
-// Currently only supports Codex; other tools return the default balance.
-func GetBalanceForTool(toolName string) Balance {
-	// For now, only Codex has real balance fetching
-	// Other tools will return the default 100%
-	if toolName == "codex" {
-		// Import is done dynamically to avoid initialization cycles
-		// The actual fetching will be done in the TUI
-		return GetDefaultBalance()
-	}
-	return GetDefaultBalance()
 }
 
 // LoadDefaultTools returns a registry with pre-configured AI tools.

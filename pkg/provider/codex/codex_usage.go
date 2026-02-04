@@ -16,6 +16,11 @@ import (
 	"time"
 )
 
+const (
+	// defaultWaitForOutputMs is the default time to wait for CLI output in milliseconds
+	defaultWaitForOutputMs = 1500
+)
+
 // UsageInfo represents Codex token usage information.
 type UsageInfo struct {
 	Percentage   int       // 0-100, percentage used
@@ -154,8 +159,24 @@ func (f *UsageFetcher) fetchFromCLI(ctx context.Context) (UsageInfo, error) {
 	}
 	stdin.Close()
 
-	// Wait a bit for the output
-	time.Sleep(2 * time.Second)
+	// Wait for output with a reasonable timeout
+	// Use a smaller initial wait and check for completion
+	outputChan := make(chan string, 1)
+	go func() {
+		time.Sleep(time.Duration(defaultWaitForOutputMs) * time.Millisecond)
+		outputChan <- stdout.String()
+	}()
+
+	var output string
+	select {
+	case output = <-outputChan:
+		// Got output, proceed
+	case <-ctx.Done():
+		if cmd.Process != nil {
+			cmd.Process.Kill()
+		}
+		return UsageInfo{}, fmt.Errorf("timeout waiting for codex output")
+	}
 
 	// Kill the process (codex CLI stays running)
 	if cmd.Process != nil {
@@ -163,7 +184,6 @@ func (f *UsageFetcher) fetchFromCLI(ctx context.Context) (UsageInfo, error) {
 	}
 
 	// Parse the output
-	output := stdout.String()
 	return parseStatusOutput(output)
 }
 

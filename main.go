@@ -88,12 +88,7 @@ func fetchToolBalances(registry *tool.Registry) {
 		switch t.Name {
 		case "codex":
 			fetcher := codex.NewBalanceFetcher()
-			balance := fetcher.GetBalance(ctx)
-			t.Balance = &tool.Balance{
-				Percentage: balance.Percentage,
-				Display:    balance.Display,
-				Color:      balance.Color,
-			}
+			t.Balance = fetcher.GetBalance(ctx)
 		// Add more tools here as needed
 		default:
 			// Tools without specific balance fetchers get default balance

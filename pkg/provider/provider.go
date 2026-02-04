@@ -10,5 +10,5 @@ import (
 // BalanceFetcher is the interface for fetching balance information for a specific tool.
 type BalanceFetcher interface {
 	// GetBalance fetches the current balance/usage for the tool.
-	GetBalance(ctx context.Context) tool.Balance
+	GetBalance(ctx context.Context) *tool.Balance
 }

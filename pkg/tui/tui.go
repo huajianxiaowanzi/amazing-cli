@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/huajianxiaowanzi/amazing-cli/pkg/config"
 	"github.com/huajianxiaowanzi/amazing-cli/pkg/tool"
 )
 
@@ -467,12 +468,8 @@ func getToolBalance(t *tool.Tool) tool.Balance {
 	if t.Balance != nil {
 		return *t.Balance
 	}
-	// Return default balance if not fetched
-	return tool.Balance{
-		Percentage: 100,
-		Display:    "100%",
-		Color:      "green",
-	}
+	// Return default balance if not fetched using the conversion method
+	return config.GetDefaultBalance().ToToolBalance()
 }
 
 // renderInlineBalanceBar creates a compact visual representation of the token balance.

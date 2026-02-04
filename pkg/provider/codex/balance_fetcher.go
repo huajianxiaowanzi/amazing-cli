@@ -20,10 +20,10 @@ func NewBalanceFetcher() *BalanceFetcher {
 }
 
 // GetBalance fetches the current Codex balance and converts it to tool.Balance.
-func (b *BalanceFetcher) GetBalance(ctx context.Context) tool.Balance {
+func (b *BalanceFetcher) GetBalance(ctx context.Context) *tool.Balance {
 	usage := b.usageFetcher.GetUsage(ctx)
 
-	return tool.Balance{
+	return &tool.Balance{
 		Percentage: usage.Percentage,
 		Display:    usage.Display,
 		Color:      usage.Color,
