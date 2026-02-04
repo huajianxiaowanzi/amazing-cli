@@ -18,6 +18,16 @@ type Balance struct {
 	Color      string // Color hint for display (e.g., "green", "yellow", "red")
 }
 
+// ToToolBalance converts config.Balance to tool.Balance.
+// This ensures consistency when converting between the two types.
+func (b Balance) ToToolBalance() tool.Balance {
+	return tool.Balance{
+		Percentage: b.Percentage,
+		Display:    b.Display,
+		Color:      b.Color,
+	}
+}
+
 // GetDefaultBalance returns the default placeholder balance.
 // In the future, this can be replaced with actual API calls to check balances.
 func GetDefaultBalance() Balance {

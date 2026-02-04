@@ -22,6 +22,25 @@ type Tool struct {
 	InstallCmds map[string]string // OS-specific installation commands (key: "windows", "darwin", "linux")
 	InstallURL  string            // URL to installation documentation
 	LastUsed    time.Time         // 最后使用时间，用于LRU排序
+	Balance     *Balance          // Token balance for this tool (nil means not fetched yet)
+}
+
+// LimitDetail represents details about a specific limit (5h or weekly).
+type LimitDetail struct {
+	Percentage int    // 0-100, percentage used
+	Display    string // Human-readable display
+	ResetTime  string // When the limit resets
+}
+
+// Balance represents a placeholder for token/credit balance information.
+type Balance struct {
+	Percentage int    // 0-100
+	Display    string // Human-readable display (e.g., "100%", "1000 tokens")
+	Color      string // Color hint for display (e.g., "green", "yellow", "red")
+	
+	// Detailed limit information for Codex
+	FiveHourLimit LimitDetail // 5h limit details
+	WeeklyLimit   LimitDetail // Weekly limit details
 }
 
 // IsInstalled checks if the tool is available on the system.
