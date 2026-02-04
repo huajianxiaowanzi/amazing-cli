@@ -523,103 +523,83 @@ func renderInlineBalanceBar(balance tool.Balance) string {
 	return fmt.Sprintf("%s %s", label, barStr)
 }
 
+// limitBarConfig holds configuration for rendering a single limit bar.
+type limitBarConfig struct {
+	label      string
+	labelColor lipgloss.Color
+	colors     []lipgloss.Color // Colors for percentage ranges: [<=20, <=40, <=60, >60]
+}
+
+// renderLimitBar renders a single limit bar with the given configuration.
+func renderLimitBar(limit tool.LimitDetail, barWidth int, cfg limitBarConfig) string {
+	if limit.Display == "" {
+		return ""
+	}
+
+	percentage := limit.Percentage
+	if percentage < 0 {
+		percentage = 0
+	} else if percentage > 100 {
+		percentage = 100
+	}
+
+	// Select color based on remaining percentage
+	var barColor lipgloss.Color
+	switch {
+	case percentage <= 20:
+		barColor = cfg.colors[0]
+	case percentage <= 40:
+		barColor = cfg.colors[1]
+	case percentage <= 60:
+		barColor = cfg.colors[2]
+	default:
+		barColor = cfg.colors[3]
+	}
+
+	filled := (barWidth * percentage) / 100
+	filledBar := lipgloss.NewStyle().Foreground(barColor).Bold(true).Render(strings.Repeat("█", filled))
+	emptyBar := lipgloss.NewStyle().Foreground(lipgloss.Color("#2A2A3E")).Render(strings.Repeat("░", barWidth-filled))
+	label := lipgloss.NewStyle().Foreground(cfg.labelColor).Bold(true).Render(cfg.label)
+
+	// Build percentage string
+	var percentStr string
+	if strings.Contains(limit.Display, "?") {
+		percentStr = "?%"
+	} else if limit.ResetTime != "" {
+		percentStr = fmt.Sprintf("%d%% (%s)", percentage, limit.ResetTime)
+	} else {
+		percentStr = fmt.Sprintf("%d%% left", percentage)
+	}
+
+	return fmt.Sprintf("%s:%s%s %s", label, filledBar, emptyBar, lipgloss.NewStyle().Foreground(barColor).Render(percentStr))
+}
+
 // renderDualLimitBar creates a sophisticated dual-limit display for Codex.
 func renderDualLimitBar(balance tool.Balance) string {
 	barWidth := 10
-	
-	// Render 5h limit bar
-	fiveHourBar := ""
-	if balance.FiveHourLimit.Display != "" {
-		percentage := balance.FiveHourLimit.Percentage
-		if percentage < 0 {
-			percentage = 0
-		}
-		if percentage > 100 {
-			percentage = 100
-		}
-		
-		filled := (barWidth * percentage) / 100
-		empty := barWidth - filled
-		
-		// Sophisticated gradient colors for 5h limit
-		var barColor lipgloss.Color
-		if percentage >= 80 {
-			barColor = lipgloss.Color("#FF0040") // Bright red
-		} else if percentage >= 60 {
-			barColor = lipgloss.Color("#FFB000") // Amber/orange
-		} else if percentage >= 40 {
-			barColor = lipgloss.Color("#00D9FF") // Bright cyan
-		} else {
-			barColor = lipgloss.Color("#00FF88") // Bright green
-		}
-		
-		filledStyle := lipgloss.NewStyle().Foreground(barColor).Bold(true)
-		emptyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#2A2A3E"))
-		
-		filledBar := filledStyle.Render(strings.Repeat("█", filled))
-		emptyBar := emptyStyle.Render(strings.Repeat("░", empty))
-		
-		labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#8BE9FD")).Bold(true)
-		label := labelStyle.Render("5h")
-		
-		percentStyle := lipgloss.NewStyle().Foreground(barColor)
-		percentStr := percentStyle.Render(fmt.Sprintf("%d%%", percentage))
-		
-		fiveHourBar = fmt.Sprintf("%s:%s%s %s", label, filledBar, emptyBar, percentStr)
-	}
-	
-	// Render weekly limit bar
-	weeklyBar := ""
-	if balance.WeeklyLimit.Display != "" {
-		percentage := balance.WeeklyLimit.Percentage
-		if percentage < 0 {
-			percentage = 0
-		}
-		if percentage > 100 {
-			percentage = 100
-		}
-		
-		filled := (barWidth * percentage) / 100
-		empty := barWidth - filled
-		
-		// Sophisticated gradient colors for weekly limit
-		var barColor lipgloss.Color
-		if percentage >= 80 {
-			barColor = lipgloss.Color("#FF1493") // Deep pink
-		} else if percentage >= 60 {
-			barColor = lipgloss.Color("#FF69B4") // Hot pink
-		} else if percentage >= 40 {
-			barColor = lipgloss.Color("#9D00FF") // Purple
-		} else {
-			barColor = lipgloss.Color("#00FFD4") // Turquoise
-		}
-		
-		filledStyle := lipgloss.NewStyle().Foreground(barColor).Bold(true)
-		emptyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#2A2A3E"))
-		
-		filledBar := filledStyle.Render(strings.Repeat("█", filled))
-		emptyBar := emptyStyle.Render(strings.Repeat("░", empty))
-		
-		labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
-		label := labelStyle.Render("Wk")
-		
-		percentStyle := lipgloss.NewStyle().Foreground(barColor)
-		percentStr := percentStyle.Render(fmt.Sprintf("%d%%", percentage))
-		
-		weeklyBar = fmt.Sprintf("%s:%s%s %s", label, filledBar, emptyBar, percentStr)
-	}
-	
-	// Combine both bars
-	if fiveHourBar != "" && weeklyBar != "" {
-		return fmt.Sprintf("%s  %s", fiveHourBar, weeklyBar)
-	} else if fiveHourBar != "" {
+
+	fiveHourBar := renderLimitBar(balance.FiveHourLimit, barWidth, limitBarConfig{
+		label:      "5h",
+		labelColor: lipgloss.Color("#8BE9FD"),
+		colors:     []lipgloss.Color{"#FF0040", "#FFB000", "#00D9FF", "#00FF88"},
+	})
+
+	weeklyBar := renderLimitBar(balance.WeeklyLimit, barWidth, limitBarConfig{
+		label:      "Wk",
+		labelColor: lipgloss.Color("#BD93F9"),
+		colors:     []lipgloss.Color{"#FF1493", "#FF69B4", "#9D00FF", "#00FFD4"},
+	})
+
+	switch {
+	case fiveHourBar != "" && weeklyBar != "":
+		return fiveHourBar + "  " + weeklyBar
+	case fiveHourBar != "":
 		return fiveHourBar
-	} else if weeklyBar != "" {
+	case weeklyBar != "":
 		return weeklyBar
+	default:
+		return renderInlineBalanceBar(balance)
 	}
-	
-	// Fallback
-	return renderInlineBalanceBar(balance)
 }
 
 func renderBlockColorTitle(text string, hueOffset float64) string {

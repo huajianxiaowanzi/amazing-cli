@@ -3,7 +3,6 @@ package codex
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -18,7 +17,9 @@ import (
 
 const (
 	// defaultWaitForOutputMs is the default time to wait for CLI output in milliseconds
-	defaultWaitForOutputMs = 1500
+	defaultWaitForOutputMs = 3000
+	// maxWaitForOutputMs is the hard timeout for CLI output collection
+	maxWaitForOutputMs = 10000
 )
 
 // LimitInfo represents information about a single limit (5h or weekly).
@@ -73,7 +74,8 @@ func NewUsageFetcher() *UsageFetcher {
 }
 
 // GetUsage fetches the current Codex token usage.
-// It tries multiple strategies in order: OAuth, CLI PTY, Cache.
+// It tries multiple strategies in order: OAuth API, RPC, CLI PTY.
+// Priority: OAuth API (fastest) > RPC > CLI PTY
 func (f *UsageFetcher) GetUsage(ctx context.Context) UsageInfo {
 	// Try to load from cache first if it's fresh
 	if cached, err := f.loadCache(); err == nil {
@@ -83,52 +85,43 @@ func (f *UsageFetcher) GetUsage(ctx context.Context) UsageInfo {
 		}
 	}
 
-	// Try OAuth strategy (reading from ~/.codex/auth.json)
-	if usage, err := f.fetchFromOAuth(ctx); err == nil {
+	// Try OAuth API strategy (fastest, most accurate) - Priority 1
+	if usage, err := FetchUsageViaOAuth(ctx); err == nil {
 		f.saveCache(usage)
 		return usage
 	}
 
-	// Try CLI PTY strategy (running codex /status)
+	// Try RPC strategy (codex app-server) - Priority 2
+	if usage, err := FetchUsageViaRPC(ctx); err == nil {
+		f.saveCache(usage)
+		return usage
+	}
+
+	// Try CLI PTY strategy (running codex /status) as fallback - Priority 3
 	if usage, err := f.fetchFromCLI(ctx); err == nil {
 		f.saveCache(usage)
 		return usage
 	}
 
-	// If all strategies fail, return a default "unknown" state
+	// If all strategies fail, return a default "unknown" state with dual limits
 	return UsageInfo{
-		Percentage:   100, // Show full as fallback
-		Display:      "100%",
+		Percentage:   0, // Show 0% as fallback (unknown)
+		Display:      "?%",
 		Color:        "green",
 		Source:       "default",
 		LastFetched:  time.Now(),
 		ErrorMessage: "unable to fetch usage data",
+		FiveHourLimit: LimitInfo{
+			Percentage: 0,
+			Display:    "?%",
+			ResetTime:  "",
+		},
+		WeeklyLimit: LimitInfo{
+			Percentage: 0,
+			Display:    "?%",
+			ResetTime:  "",
+		},
 	}
-}
-
-// fetchFromOAuth attempts to read OAuth credentials and fetch usage.
-// This is a simplified version - full implementation would need to handle token refresh
-// and make API calls to ChatGPT backend.
-func (f *UsageFetcher) fetchFromOAuth(ctx context.Context) (UsageInfo, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return UsageInfo{}, fmt.Errorf("failed to get home directory: %w", err)
-	}
-
-	authFile := filepath.Join(homeDir, ".codex", "auth.json")
-	data, err := os.ReadFile(authFile)
-	if err != nil {
-		return UsageInfo{}, fmt.Errorf("failed to read auth file: %w", err)
-	}
-
-	var creds OAuthCredentials
-	if err := json.Unmarshal(data, &creds); err != nil {
-		return UsageInfo{}, fmt.Errorf("failed to parse auth file: %w", err)
-	}
-
-	// TODO: Implement actual OAuth API calls
-	// For now, return an error to fall back to CLI strategy
-	return UsageInfo{}, fmt.Errorf("OAuth strategy not fully implemented")
 }
 
 // fetchFromCLI attempts to run "codex /status" and parse the output.
@@ -143,59 +136,19 @@ func (f *UsageFetcher) fetchFromCLI(ctx context.Context) (UsageInfo, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	// Run codex with /status command
-	// We need to send "/status\n" to the codex CLI
-	cmd := exec.CommandContext(ctx, codexPath, "-s", "read-only", "-a", "untrusted")
-
-	// Create pipes for stdin and stdout
-	stdin, err := cmd.StdinPipe()
+	output, err := runCodexStatus(ctx, codexPath)
 	if err != nil {
-		return UsageInfo{}, fmt.Errorf("failed to create stdin pipe: %w", err)
-	}
-
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stdout
-
-	// Start the command
-	if err := cmd.Start(); err != nil {
-		return UsageInfo{}, fmt.Errorf("failed to start codex: %w", err)
-	}
-
-	// Send /status command
-	if _, err := stdin.Write([]byte("/status\n")); err != nil {
-		stdin.Close()
-		cmd.Process.Kill()
-		return UsageInfo{}, fmt.Errorf("failed to send /status command: %w", err)
-	}
-	stdin.Close()
-
-	// Wait for output with a reasonable timeout
-	// Use a smaller initial wait and check for completion
-	outputChan := make(chan string, 1)
-	go func() {
-		time.Sleep(time.Duration(defaultWaitForOutputMs) * time.Millisecond)
-		outputChan <- stdout.String()
-	}()
-
-	var output string
-	select {
-	case output = <-outputChan:
-		// Got output, proceed
-	case <-ctx.Done():
-		if cmd.Process != nil {
-			cmd.Process.Kill()
-		}
-		return UsageInfo{}, fmt.Errorf("timeout waiting for codex output")
-	}
-
-	// Kill the process (codex CLI stays running)
-	if cmd.Process != nil {
-		cmd.Process.Kill()
+		f.writeDebugOutput("runCodexStatus error", err.Error())
+		return UsageInfo{}, err
 	}
 
 	// Parse the output
-	return parseStatusOutput(output)
+	usage, parseErr := parseStatusOutput(output)
+	if parseErr != nil {
+		f.writeDebugOutput("parseStatusOutput error", output)
+		return UsageInfo{}, parseErr
+	}
+	return usage, nil
 }
 
 // parseStatusOutput parses the output of "codex /status" command.
@@ -205,7 +158,8 @@ func (f *UsageFetcher) fetchFromCLI(ctx context.Context) (UsageInfo, error) {
 // - "Weekly limit: 23% used (resets in 4 days)"
 // - "Credits: 1,234.56"
 func parseStatusOutput(output string) (UsageInfo, error) {
-	scanner := bufio.NewScanner(strings.NewReader(output))
+	cleanOutput := stripANSICodes(output)
+	scanner := bufio.NewScanner(strings.NewReader(cleanOutput))
 
 	var fiveHourPercent int
 	var fiveHourReset string
@@ -217,12 +171,14 @@ func parseStatusOutput(output string) (UsageInfo, error) {
 	// Regex patterns
 	// Match patterns like "45% used" or "45.5% used"
 	usedPattern := regexp.MustCompile(`(\d+(?:\.\d+)?)\s*%\s*used`)
-	// Match patterns like "100% left" or "50% left"
-	leftPattern := regexp.MustCompile(`(\d+(?:\.\d+)?)\s*%\s*left`)
+	// Match patterns like "100% left", "50% left", or "90% remaining"
+	leftPattern := regexp.MustCompile(`(\d+(?:\.\d+)?)\s*%\s*(left|remaining)`)
 	// Match patterns like "resets in 2h 30m" or "resets in 4 days"
 	resetInPattern := regexp.MustCompile(`resets in (.+)`)
 	// Match patterns like "resets 03:31 on 5 Feb" or "resets 16:22 on 10 Feb"
 	resetOnPattern := regexp.MustCompile(`resets (\d{2}:\d{2}) on (\d+\s+\w+)`)
+	// Match patterns like "resets 05:09"
+	resetAtPattern := regexp.MustCompile(`resets (\d{2}:\d{2})`)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -248,6 +204,8 @@ func parseStatusOutput(output string) (UsageInfo, error) {
 				fiveHourReset = matches[1]
 			} else if matches := resetOnPattern.FindStringSubmatch(line); len(matches) > 2 {
 				fiveHourReset = fmt.Sprintf("%s %s", matches[1], matches[2])
+			} else if matches := resetAtPattern.FindStringSubmatch(line); len(matches) > 1 {
+				fiveHourReset = matches[1]
 			}
 		}
 
@@ -272,6 +230,8 @@ func parseStatusOutput(output string) (UsageInfo, error) {
 				weeklyReset = matches[1]
 			} else if matches := resetOnPattern.FindStringSubmatch(line); len(matches) > 2 {
 				weeklyReset = fmt.Sprintf("%s %s", matches[1], matches[2])
+			} else if matches := resetAtPattern.FindStringSubmatch(line); len(matches) > 1 {
+				weeklyReset = matches[1]
 			}
 		}
 	}
@@ -334,6 +294,12 @@ func parseStatusOutput(output string) (UsageInfo, error) {
 	}, nil
 }
 
+func stripANSICodes(s string) string {
+	// Strip common ANSI CSI escape sequences to make parsing robust.
+	re := regexp.MustCompile(`\x1b\[[0-9;?]*[ -/]*[@-~]`)
+	return re.ReplaceAllString(s, "")
+}
+
 // ParseStatusOutputForTest is an exported version of parseStatusOutput for testing purposes.
 func ParseStatusOutputForTest(output string) (UsageInfo, error) {
 	return parseStatusOutput(output)
@@ -362,4 +328,11 @@ func (f *UsageFetcher) saveCache(info UsageInfo) error {
 	}
 
 	return os.WriteFile(f.cacheFile, data, 0644)
+}
+
+func (f *UsageFetcher) writeDebugOutput(prefix, content string) {
+	dir := filepath.Dir(f.cacheFile)
+	_ = os.MkdirAll(dir, 0755)
+	path := filepath.Join(dir, "codex-usage-debug.txt")
+	_ = os.WriteFile(path, []byte(prefix+"\n"+content+"\n"), 0644)
 }
