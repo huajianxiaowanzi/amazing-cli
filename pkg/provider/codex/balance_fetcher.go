@@ -27,5 +27,15 @@ func (b *BalanceFetcher) GetBalance(ctx context.Context) *tool.Balance {
 		Percentage: usage.Percentage,
 		Display:    usage.Display,
 		Color:      usage.Color,
+		FiveHourLimit: tool.LimitDetail{
+			Percentage: usage.FiveHourLimit.Percentage,
+			Display:    usage.FiveHourLimit.Display,
+			ResetTime:  usage.FiveHourLimit.ResetTime,
+		},
+		WeeklyLimit: tool.LimitDetail{
+			Percentage: usage.WeeklyLimit.Percentage,
+			Display:    usage.WeeklyLimit.Display,
+			ResetTime:  usage.WeeklyLimit.ResetTime,
+		},
 	}
 }

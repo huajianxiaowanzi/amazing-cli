@@ -473,10 +473,17 @@ func getToolBalance(t *tool.Tool) tool.Balance {
 }
 
 // renderInlineBalanceBar creates a compact visual representation of the token balance.
+// For Codex, it shows both 5h and weekly limits with sophisticated styling.
 func renderInlineBalanceBar(balance tool.Balance) string {
+	// Check if this is Codex with dual limits
+	hasBothLimits := balance.FiveHourLimit.Display != "" || balance.WeeklyLimit.Display != ""
+	
+	if hasBothLimits {
+		return renderDualLimitBar(balance)
+	}
+	
+	// Original single limit display
 	width := 15
-
-	// Clamp percentage to 0-100 range
 	percentage := balance.Percentage
 	if percentage < 0 {
 		percentage = 0
@@ -514,6 +521,105 @@ func renderInlineBalanceBar(balance tool.Balance) string {
 	barStr := barStyle.Render(filledBar) + emptyStyle.Render(emptyBar)
 
 	return fmt.Sprintf("%s %s", label, barStr)
+}
+
+// renderDualLimitBar creates a sophisticated dual-limit display for Codex.
+func renderDualLimitBar(balance tool.Balance) string {
+	barWidth := 10
+	
+	// Render 5h limit bar
+	fiveHourBar := ""
+	if balance.FiveHourLimit.Display != "" {
+		percentage := balance.FiveHourLimit.Percentage
+		if percentage < 0 {
+			percentage = 0
+		}
+		if percentage > 100 {
+			percentage = 100
+		}
+		
+		filled := (barWidth * percentage) / 100
+		empty := barWidth - filled
+		
+		// Sophisticated gradient colors for 5h limit
+		var barColor lipgloss.Color
+		if percentage >= 80 {
+			barColor = lipgloss.Color("#FF0040") // Bright red
+		} else if percentage >= 60 {
+			barColor = lipgloss.Color("#FFB000") // Amber/orange
+		} else if percentage >= 40 {
+			barColor = lipgloss.Color("#00D9FF") // Bright cyan
+		} else {
+			barColor = lipgloss.Color("#00FF88") // Bright green
+		}
+		
+		filledStyle := lipgloss.NewStyle().Foreground(barColor).Bold(true)
+		emptyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#2A2A3E"))
+		
+		filledBar := filledStyle.Render(strings.Repeat("█", filled))
+		emptyBar := emptyStyle.Render(strings.Repeat("░", empty))
+		
+		labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#8BE9FD")).Bold(true)
+		label := labelStyle.Render("5h")
+		
+		percentStyle := lipgloss.NewStyle().Foreground(barColor)
+		percentStr := percentStyle.Render(fmt.Sprintf("%d%%", percentage))
+		
+		fiveHourBar = fmt.Sprintf("%s:%s%s %s", label, filledBar, emptyBar, percentStr)
+	}
+	
+	// Render weekly limit bar
+	weeklyBar := ""
+	if balance.WeeklyLimit.Display != "" {
+		percentage := balance.WeeklyLimit.Percentage
+		if percentage < 0 {
+			percentage = 0
+		}
+		if percentage > 100 {
+			percentage = 100
+		}
+		
+		filled := (barWidth * percentage) / 100
+		empty := barWidth - filled
+		
+		// Sophisticated gradient colors for weekly limit
+		var barColor lipgloss.Color
+		if percentage >= 80 {
+			barColor = lipgloss.Color("#FF1493") // Deep pink
+		} else if percentage >= 60 {
+			barColor = lipgloss.Color("#FF69B4") // Hot pink
+		} else if percentage >= 40 {
+			barColor = lipgloss.Color("#9D00FF") // Purple
+		} else {
+			barColor = lipgloss.Color("#00FFD4") // Turquoise
+		}
+		
+		filledStyle := lipgloss.NewStyle().Foreground(barColor).Bold(true)
+		emptyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#2A2A3E"))
+		
+		filledBar := filledStyle.Render(strings.Repeat("█", filled))
+		emptyBar := emptyStyle.Render(strings.Repeat("░", empty))
+		
+		labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
+		label := labelStyle.Render("Wk")
+		
+		percentStyle := lipgloss.NewStyle().Foreground(barColor)
+		percentStr := percentStyle.Render(fmt.Sprintf("%d%%", percentage))
+		
+		weeklyBar = fmt.Sprintf("%s:%s%s %s", label, filledBar, emptyBar, percentStr)
+	}
+	
+	// Combine both bars
+	if fiveHourBar != "" && weeklyBar != "" {
+		return fmt.Sprintf("%s  %s", fiveHourBar, weeklyBar)
+	} else if fiveHourBar != "" {
+		return fiveHourBar
+	} else if weeklyBar != "" {
+		return weeklyBar
+	}
+	
+	// Fallback
+	return renderInlineBalanceBar(balance)
 }
 
 func renderBlockColorTitle(text string, hueOffset float64) string {

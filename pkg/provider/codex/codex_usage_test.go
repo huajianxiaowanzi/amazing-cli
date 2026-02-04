@@ -29,6 +29,26 @@ Credits: 1,234.56
 			expectContains: "2h 30m",
 		},
 		{
+			name: "new format with % left",
+			output: `
+5h limit:             [████████████████████] 100% left (resets 03:31 on 5 Feb)
+Weekly limit:         [████████████████████] 100% left (resets 16:22 on 10 Feb)
+`,
+			expectError:   false,
+			expectPercent: 0, // 100% left = 0% used
+			expectColor:   "green",
+		},
+		{
+			name: "new format with partial usage",
+			output: `
+5h limit:             [███████░░░░░░░░░░░░░] 60% left (resets 03:31 on 5 Feb)
+Weekly limit:         [████████████████████] 95% left (resets 16:22 on 10 Feb)
+`,
+			expectError:   false,
+			expectPercent: 40, // 60% left = 40% used
+			expectColor:   "green",
+		},
+		{
 			name: "high usage - red color",
 			output: `
 5h limit: 85% used (resets in 1h)
