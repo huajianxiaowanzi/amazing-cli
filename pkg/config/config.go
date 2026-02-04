@@ -34,6 +34,19 @@ type BalanceProvider interface {
 	GetBalance(toolName string) (Balance, error)
 }
 
+// GetBalanceForTool returns the balance for a specific tool.
+// Currently only supports Codex; other tools return the default balance.
+func GetBalanceForTool(toolName string) Balance {
+	// For now, only Codex has real balance fetching
+	// Other tools will return the default 100%
+	if toolName == "codex" {
+		// Import is done dynamically to avoid initialization cycles
+		// The actual fetching will be done in the TUI
+		return GetDefaultBalance()
+	}
+	return GetDefaultBalance()
+}
+
 // LoadDefaultTools returns a registry with pre-configured AI tools.
 func LoadDefaultTools() *tool.Registry {
 	registry := tool.NewRegistry()

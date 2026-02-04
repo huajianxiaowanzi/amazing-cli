@@ -12,7 +12,6 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/huajianxiaowanzi/amazing-cli/pkg/config"
 	"github.com/huajianxiaowanzi/amazing-cli/pkg/tool"
 )
 
@@ -134,7 +133,6 @@ type Model struct {
 	promptCursor      int
 	spinner           spinner.Model
 	selected          string
-	balance           config.Balance
 	title             string
 	quitting          bool
 	err               error
@@ -162,7 +160,6 @@ func NewModel(registry *tool.Registry) Model {
 		cursor:       0,
 		promptCursor: 0,
 		spinner:      spin,
-		balance:      config.GetDefaultBalance(),
 		title:        renderBlockColorTitle(title, rand.Float64()*360.0),
 	}
 }
@@ -360,7 +357,11 @@ func (m Model) View() string {
 		// Render tool item with inline token balance
 		toolName := style.Render(t.DisplayName)
 		toolNameWidth := lipgloss.Width(toolName)
-		balanceBar := renderInlineBalanceBar(m.balance)
+		
+		// Get balance for this tool
+		balance := getToolBalance(t)
+		balanceBar := renderInlineBalanceBar(balance)
+		
 		// Calculate padding to align all token bars: (maxNameWidth - currentNameWidth) + fixedGap
 		padding := maxNameWidth - toolNameWidth + tokenGap
 		s.WriteString(fmt.Sprintf("%s%s %s%s%s\n", cursor, statusIcon, toolName, strings.Repeat(" ", padding), balanceBar))
@@ -460,8 +461,22 @@ func (m Model) getSortedTools() []*tool.Tool {
 	return sorted
 }
 
+// getToolBalance returns the balance for a given tool.
+// If the tool's balance hasn't been fetched yet, it returns a default balance.
+func getToolBalance(t *tool.Tool) tool.Balance {
+	if t.Balance != nil {
+		return *t.Balance
+	}
+	// Return default balance if not fetched
+	return tool.Balance{
+		Percentage: 100,
+		Display:    "100%",
+		Color:      "green",
+	}
+}
+
 // renderInlineBalanceBar creates a compact visual representation of the token balance.
-func renderInlineBalanceBar(balance config.Balance) string {
+func renderInlineBalanceBar(balance tool.Balance) string {
 	width := 15
 
 	// Clamp percentage to 0-100 range

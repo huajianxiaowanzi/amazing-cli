@@ -22,6 +22,14 @@ type Tool struct {
 	InstallCmds map[string]string // OS-specific installation commands (key: "windows", "darwin", "linux")
 	InstallURL  string            // URL to installation documentation
 	LastUsed    time.Time         // 最后使用时间，用于LRU排序
+	Balance     *Balance          // Token balance for this tool (nil means not fetched yet)
+}
+
+// Balance represents a placeholder for token/credit balance information.
+type Balance struct {
+	Percentage int    // 0-100
+	Display    string // Human-readable display (e.g., "100%", "1000 tokens")
+	Color      string // Color hint for display (e.g., "green", "yellow", "red")
 }
 
 // IsInstalled checks if the tool is available on the system.

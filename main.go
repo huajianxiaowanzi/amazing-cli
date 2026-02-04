@@ -2,11 +2,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/huajianxiaowanzi/amazing-cli/pkg/config"
+	"github.com/huajianxiaowanzi/amazing-cli/pkg/provider/codex"
+	"github.com/huajianxiaowanzi/amazing-cli/pkg/tool"
 	"github.com/huajianxiaowanzi/amazing-cli/pkg/tui"
 )
 
@@ -18,11 +21,14 @@ func main() {
 	usageData := config.LoadToolUsage()
 
 	// Apply usage history to tools
-	for _, tool := range registry.List() {
-		if lastUsed, ok := usageData[tool.Name]; ok {
-			tool.LastUsed = lastUsed
+	for _, t := range registry.List() {
+		if lastUsed, ok := usageData[t.Name]; ok {
+			t.LastUsed = lastUsed
 		}
 	}
+
+	// Fetch balances for tools that support it
+	fetchToolBalances(registry)
 
 	// Run the TUI and get user selection
 	selectedToolName, err := tui.Run(registry)
@@ -65,5 +71,33 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error executing tool: %v\n", err)
 		os.Exit(1)
+	}
+}
+
+// fetchToolBalances fetches the balance for each tool that supports it.
+func fetchToolBalances(registry *tool.Registry) {
+	ctx := context.Background()
+
+	for _, t := range registry.List() {
+		// Only fetch for tools that are installed
+		if !t.IsInstalled() {
+			continue
+		}
+
+		// Fetch balance based on tool name
+		switch t.Name {
+		case "codex":
+			fetcher := codex.NewBalanceFetcher()
+			balance := fetcher.GetBalance(ctx)
+			t.Balance = &tool.Balance{
+				Percentage: balance.Percentage,
+				Display:    balance.Display,
+				Color:      balance.Color,
+			}
+		// Add more tools here as needed
+		default:
+			// Tools without specific balance fetchers get default balance
+			continue
+		}
 	}
 }
